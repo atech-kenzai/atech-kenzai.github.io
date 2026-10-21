@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>kenzai cloud</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
-<script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+<!-- LIFF / WOFF の SDK は入口に合わせて片方だけ読み込む（起動処理の loadScriptOnce） -->
 <style>
 /* ============================================================
    kenzai cloud — original design system
@@ -2765,6 +2765,29 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
      Backend hooks (fetch to GAS_URL) stubbed to no-op for prototype.
      ============================================================ -->
 <script>
+/* -----------------------------------------------------------
+   入口（v2.2）：?p=lw か、同じタブで一度 LINE WORKS として開いた → LINE WORKS（WOFF）。それ以外は LINE（LIFF）
+   ----------------------------------------------------------- */
+var KC_PLATFORM = (function(){
+  // URL の目印を先に確定させる（タブの記憶に書けない環境でも LINE WORKS として開く）
+  if (/[?&]p=lw(&|$)/.test(location.search)) {
+    try { sessionStorage.setItem('kc_platform', 'lw'); } catch(e) {}
+    return 'lw';
+  }
+  try { if (sessionStorage.getItem('kc_platform') === 'lw') return 'lw'; } catch(e) {}
+  return 'line';
+})();
+// 端末に残す情報は LINE と LINE WORKS で保存場所の名前を分ける（PC のブラウザでは同じ場所を共有するため）。
+// LINE は今までどおりの名前（既存の端末の現場・履歴をそのまま使う）
+var KC_STORE = (function(){
+  var pre = KC_PLATFORM === 'lw' ? 'lw:' : '';
+  function safe(fn, dflt){ try { return fn(); } catch(e){ return dflt; } }
+  return {
+    getItem: function(k){ return safe(function(){ return window.localStorage.getItem(pre + k); }, null); },
+    setItem: function(k, v){ safe(function(){ window.localStorage.setItem(pre + k, v); }); },
+    removeItem: function(k){ safe(function(){ window.localStorage.removeItem(pre + k); }); }
+  };
+})();
 var GAS_URL = "https://script.google.com/macros/s/AKfycbyven-raoEb3V7PfsjZTHWT5XPYxdAPjvbmOIrldTd-YmKvYIVrFkIGZ27fPqhuCel7/exec";
 
 // onclick="f('…')" に埋め込む ID 用。英数字・_・- 以外を落とす（HTML エスケープでは JS 文字列は守れないため）
@@ -2915,7 +2938,7 @@ function mergeImageDefaults(categories, defaults){
 // 起動時に syncProductsFromServer() が GAS から最新を取って上書きする。
 var CATEGORIES = (function(){
   try {
-    var saved = JSON.parse(localStorage.getItem('kenzai_products_cache') || 'null');
+    var saved = JSON.parse(KC_STORE.getItem('kenzai_products_cache') || 'null');
     if (saved && Array.isArray(saved.data) && saved.data.length > 0) {
       return mergeImageDefaults(saved.data, CATEGORIES_DEFAULTS);
     }
@@ -2932,8 +2955,8 @@ var sites    = [];
 // 会社別価格オーバーライド（将来機能の枠）。現状は未配線で常にデフォルト価格を使用。
 // GAS getProducts が会社別価格を返すようになったら syncProductsFromServer で埋める想定。
 var companyPrices = {};
-var currentCompany = localStorage.getItem('kenzai_company') || '';
-var currentUser    = localStorage.getItem('kenzai_user')    || '';
+var currentCompany = KC_STORE.getItem('kenzai_company') || '';
+var currentUser    = KC_STORE.getItem('kenzai_user')    || '';
 var currentCatIndex = 0;
 var currentSearch = '';
 var currentFilter = 'all';
@@ -2944,14 +2967,73 @@ function isAdmin(){ return currentCompany === 'a-tech'; }
    Startup
    ----------------------------------------------------------- */
 var LIFF_ID = "2009543783-09mEjuvC";
+var LIFF_SDK_URL = "https://static.line-scdn.net/liff/edge/2/sdk.js";
 var liffReady = false;
+// LINE WORKS（v2.2）。WOFF ID は Developer Console で WOFF アプリを登録したあとに入れる
+var WOFF_ID = "d0fSIuZSVj6LwveSt60GyA";
+var WOFF_SDK_URL = "https://static.worksmobile.net/static/wm/woff/edge/3.7.4/sdk.js";
+var lwAccessToken = '';   // LINE WORKS のトークンはメモリにだけ置く（端末・URL・画面には出さない）
+var lwProfile = null;
+
+// GAS に「誰が」を伝える項目。LINE WORKS はトークン（GAS が確かめる）、LINE は LINE の userId
+function authPayload(){
+  return KC_PLATFORM === 'lw' ? { lwToken: lwAccessToken } : { lineUid: KC_STORE.getItem('kenzai_line_uid') || '' };
+}
+function hasIdentity(){ return KC_PLATFORM === 'lw' ? !!lwAccessToken : !!KC_STORE.getItem('kenzai_line_uid'); }
+function identityKey(){ return KC_PLATFORM === 'lw' ? ('lw:' + ((lwProfile && lwProfile.userId) || '')) : (KC_STORE.getItem('kenzai_line_uid') || ''); }
+function loadScriptOnce(url, globalName){
+  if (window[globalName]) return Promise.resolve();
+  return new Promise(function(resolve, reject){
+    var el = document.createElement('script');
+    el.src = url;
+    el.onload = function(){ resolve(); };
+    el.onerror = function(){ reject(new Error('SDK load failed: ' + globalName)); };
+    document.head.appendChild(el);
+  });
+}
+
+// LINE WORKS の起動：WOFF 初期化 → （PC の外部ブラウザで未ログインなら）ログイン → プロフィールとトークン → 利用者の確認
+function startWoff(){
+  if (!WOFF_ID) { showStartError('準備中です', 'LINE WORKS 版はまだ準備中です。準備ができたらお知らせします。'); return; }
+  loadScriptOnce(WOFF_SDK_URL, 'woff')
+    .then(function(){ return woff.init({ woffId: WOFF_ID }); })
+    .then(function(){
+      if (!woff.isInClient() && !woff.isLoggedIn()) {
+        // PC 版・ブラウザ版：ログインして同じ入口（?p=lw）に戻ってくる
+        woff.login({ redirectUri: location.origin + location.pathname + '?p=lw' });
+        return null;
+      }
+      return Promise.resolve(woff.getProfile());
+    })
+    .then(function(profile){
+      if (!profile) return;
+      lwProfile = profile;
+      return Promise.resolve(woff.getAccessToken()).then(function(t){
+        lwAccessToken = t || '';
+        if (!lwAccessToken) throw new Error('no access token');
+        lineProfile = { displayName: profile.displayName || '' };
+        checkMembership();
+      });
+    })
+    .catch(function(err){
+      console.warn('[WOFF] start failed', err && err.message);
+      showStartError('開けませんでした', 'LINE WORKS のアプリから開き直してください。続くときは a-tech の担当者に知らせてください。');
+    });
+}
+function showStartError(title, msg){
+  showPending('');
+  var t = document.getElementById('pending-title'); if (t) t.textContent = title;
+  var m = document.getElementById('pending-msg'); if (m) m.textContent = msg;
+}
 
 window.addEventListener('load', function() {
   buildCatTabs();
   showCategory(0);
   updateCartBar();
 
+  if (KC_PLATFORM === 'lw') { startWoff(); return; }
   // LIFF (LINE Mini App) 優先で初期化、失敗時は ID/PW フォームにフォールバック
+  loadScriptOnce(LIFF_SDK_URL, 'liff').catch(function(e){ console.warn('[LIFF] sdk load failed', e); }).then(function(){
   if (typeof liff !== 'undefined') {
     liff.init({ liffId: LIFF_ID })
       .then(function() {
@@ -2961,7 +3043,7 @@ window.addEventListener('load', function() {
           liff.getProfile()
             .then(function(profile) {
               lineProfile = profile;
-              localStorage.setItem('kenzai_line_uid', profile.userId);
+              KC_STORE.setItem('kenzai_line_uid', profile.userId);
               checkMembership();
             })
             .catch(function() {
@@ -2979,6 +3061,7 @@ window.addEventListener('load', function() {
   } else {
     fallbackLogin();
   }
+  });
 });
 
 function fallbackLogin() {
@@ -3017,18 +3100,40 @@ function gasGet(params){
 function applyMe(me){
   currentUser = me.name;
   currentCompany = me.affiliation;
-  localStorage.setItem('kenzai_company', currentCompany);
-  localStorage.setItem('kenzai_user', currentUser);
-  try { localStorage.setItem('kenzai_me', JSON.stringify({ uid: localStorage.getItem('kenzai_line_uid'), name: me.name, affiliation: me.affiliation, approved: true })); } catch(e){}
+  KC_STORE.setItem('kenzai_company', currentCompany);
+  KC_STORE.setItem('kenzai_user', currentUser);
+  try { KC_STORE.setItem('kenzai_me', JSON.stringify({ uid: identityKey(), name: me.name, affiliation: me.affiliation, approved: true })); } catch(e){}
+}
+
+// 同じ端末を別の人が使ったら、前の人の履歴・結果待ちの注文・現場を消す（共用 PC 対策）
+function ensureOwner(uid){
+  if (!uid) return;
+  var prev = KC_STORE.getItem('kenzai_owner');
+  if (!prev) {
+    // 印が無い古い端末：前回確かめた人（kenzai_me）が今の人と違えば、その人の分として扱う
+    try { var me = JSON.parse(KC_STORE.getItem('kenzai_me') || 'null'); if (me && me.uid) prev = me.uid; } catch(e) {}
+  }
+  if (prev && prev !== uid) {
+    ['kenzai_history', 'kenzai_pending_order', 'kenzai_me', 'kenzai_sites', 'kenzai_company', 'kenzai_user'].forEach(function(k){ KC_STORE.removeItem(k); });
+    HISTORY_DATA.length = 0;
+    sites = []; sitesLoaded = false;
+  }
+  KC_STORE.setItem('kenzai_owner', uid);
 }
 
 function checkMembership(){
-  var uid = localStorage.getItem('kenzai_line_uid') || '';
+  var uid = identityKey();
+  ensureOwner(uid);
   showLoading(true);
-  gasGet({ action: 'getMe', lineUid: uid })
+  gasPost(Object.assign({ action: 'getMe' }, authPayload()))
     .then(function(me){
       showLoading(false);
+      if (me && !me.ok && /^lw_(auth_failed|not_configured)$/.test(me.error || '')) {
+        showStartError('本人を確かめられませんでした', 'LINE WORKS のアプリから開き直してください。続くときは a-tech の担当者に知らせてください。');
+        return;
+      }
       if (!me || !me.ok) throw new Error((me && me.error) || 'getMe failed');
+      if (me.suggestedName && lineProfile) lineProfile.displayName = me.suggestedName;
       if (!me.registered) { showRegister(); return; }
       if (!me.approved) { showPending(me.name); return; }
       applyMe(me);
@@ -3040,8 +3145,8 @@ function checkMembership(){
       console.warn('[me] check failed', err);
       // 電波が悪いときは、前に承認を確かめた同じ LINE の人だけ手元の情報で入れる（注文時に GAS がもう一度確かめる）
       try {
-        var cached = JSON.parse(localStorage.getItem('kenzai_me') || 'null');
-        if (cached && cached.approved && cached.uid === uid) {
+        var cached = JSON.parse(KC_STORE.getItem('kenzai_me') || 'null');
+        if (cached && cached.approved && uid && cached.uid === uid) {
           applyMe(cached);
           initHome();
           showToast('通信できませんでした。前回の情報で開いています', false);
@@ -3074,13 +3179,12 @@ function submitRegister(){
   if (!name) { errEl.textContent = '氏名を入れてください'; errEl.style.display = 'block'; return; }
   var btn = document.getElementById('reg-submit-btn'); if (btn) btn.disabled = true;
   showLoading(true);
-  gasPost({
+  gasPost(Object.assign({
     action: 'registerUser',
-    lineUid: localStorage.getItem('kenzai_line_uid') || '',
     displayName: lineProfile ? lineProfile.displayName : '',
     name: name,
     affiliation: aff
-  }).then(function(r){
+  }, authPayload())).then(function(r){
     showLoading(false); if (btn) btn.disabled = false;
     if (!r || !r.ok) throw new Error((r && r.error) || 'register failed');
     if (r.approved) { checkMembership(); return; }
@@ -3107,8 +3211,8 @@ function doLogin() {
   // prototype: accept any non-empty credentials
   currentCompany = id.indexOf('atech') >= 0 ? 'a-tech' : '早川工務店';
   currentUser    = id;
-  localStorage.setItem('kenzai_company', currentCompany);
-  localStorage.setItem('kenzai_user',    currentUser);
+  KC_STORE.setItem('kenzai_company', currentCompany);
+  KC_STORE.setItem('kenzai_user',    currentUser);
   hideLoginError();
   initHome();
 }
@@ -3116,10 +3220,14 @@ function showLoginError(msg){var el=document.getElementById('login-error');el.te
 function hideLoginError(){document.getElementById('login-error').style.display='none';}
 function doLogout() {
   if (!confirm('ログアウトしますか？')) return;
-  localStorage.removeItem('kenzai_company');
-  localStorage.removeItem('kenzai_user');
-  localStorage.removeItem('kenzai_line_uid');
+  ['kenzai_company', 'kenzai_user', 'kenzai_line_uid', 'kenzai_history', 'kenzai_pending_order', 'kenzai_me'].forEach(function(k){ KC_STORE.removeItem(k); });
   currentCompany = ''; currentUser = ''; companyPrices = {};
+  if (KC_PLATFORM === 'lw') {
+    lwAccessToken = '';
+    try { if (window.woff && woff.isLoggedIn && woff.isLoggedIn()) woff.logout(); } catch(e) {}
+    location.reload();
+    return;
+  }
   if (liffReady && typeof liff !== 'undefined' && liff.isLoggedIn()) {
     liff.logout();
     location.reload();
@@ -3448,7 +3556,7 @@ function ensureSites(){
   if (sitesLoaded) return;
   sitesLoaded = true;
   try {
-    var raw = localStorage.getItem('kenzai_sites');
+    var raw = KC_STORE.getItem('kenzai_sites');
     if (raw === null) {
       sites = isDemoMode() ? SAMPLE_SITES.slice() : [];
       persistSites();
@@ -3467,7 +3575,7 @@ function ensureSites(){
   }
 }
 function persistSites(){
-  try { localStorage.setItem('kenzai_sites', JSON.stringify(sites)); }
+  try { KC_STORE.setItem('kenzai_sites', JSON.stringify(sites)); }
   catch (e) { console.warn('[sites] persist failed', e); }
 }
 
@@ -3745,13 +3853,13 @@ var PENDING_ORDER_KEY = 'kenzai_pending_order';
 var submittingOrder = false;
 function loadPendingOrder(){
   try {
-    var p = JSON.parse(localStorage.getItem(PENDING_ORDER_KEY) || 'null');
+    var p = JSON.parse(KC_STORE.getItem(PENDING_ORDER_KEY) || 'null');
     if (p && p.id && (Date.now() - (p.ts || 0)) < 3 * 864e5) return p;   // 3日より古いものは捨てる
   } catch(e){}
   return null;
 }
-function savePendingOrder(p){ try { localStorage.setItem(PENDING_ORDER_KEY, JSON.stringify(p)); } catch(e){} }
-function clearPendingOrder(){ try { localStorage.removeItem(PENDING_ORDER_KEY); } catch(e){} }
+function savePendingOrder(p){ try { KC_STORE.setItem(PENDING_ORDER_KEY, JSON.stringify(p)); } catch(e){} }
+function clearPendingOrder(){ try { KC_STORE.removeItem(PENDING_ORDER_KEY); } catch(e){} }
 function orderSignature(items){
   return JSON.stringify({
     items: items.map(function(i){ return [i.sku || i.name, i.qty]; }).sort(),
@@ -3765,7 +3873,7 @@ function newOrderId(){
 }
 // 結果が分からない注文がサーバーに届いていたかを確かめる → true/false（確かめられなければ reject）
 function wasOrderReceived(orderId){
-  return gasGet({ action: 'getOrders', lineUid: localStorage.getItem('kenzai_line_uid') || '' })
+  return gasPost(Object.assign({ action: 'getOrders' }, authPayload()))
     .then(function(r){
       if (!r || !r.ok || !Array.isArray(r.orders)) throw new Error('getOrders failed');
       return r.orders.some(function(o){ return o.id === orderId; });
@@ -3779,7 +3887,10 @@ var ORDER_ERROR_MESSAGES = {
   bad_qty: '数量を確かめてください',
   no_items: '商品が選択されていません',
   bad_delivery_date: '希望日を選び直してください',
-  order_id_conflict: 'もう一度お試しください'
+  order_id_conflict: 'もう一度お試しください',
+  lw_auth_failed: 'LINE WORKS で本人を確かめられませんでした。アプリを開き直してください',
+  lw_unavailable: 'LINE WORKS につながりませんでした。少し待ってからもう一度お試しください',
+  lw_not_configured: 'LINE WORKS 版の準備がまだです'
 };
 
 function submitOrder(){
@@ -3789,7 +3900,7 @@ function submitOrder(){
     items.push({ sku: findSkuByName(n), name: n, qty: cart[n].qty });
   });
   if (!items.length) { showToast('商品が選択されていません', false); return; }
-  if (!localStorage.getItem('kenzai_line_uid')) { showToast('LINE アプリから開いてください', false); return; }
+  if (!hasIdentity()) { showToast('LINE または LINE WORKS のアプリから開いてください', false); return; }
 
   var DOW = ['日','月','火','水','木','金','土'];
   var dl = '—';
@@ -3827,10 +3938,9 @@ function submitOrder(){
   savePendingOrder({ id: oid, sig: sig, ts: (pending && pending.sig === sig) ? pending.ts : Date.now() });
   var hoistLabel = (delivery.hoist === 'yes') ? '軒先渡し(別途見積)' : '車上渡し';
 
-  var payload = {
+  var payload = Object.assign({
     action: 'submitOrder',
     orderId: oid,
-    lineUid: localStorage.getItem('kenzai_line_uid') || '',
     ankenCode: delivery.anken || '',
     site: delivery.site || '',
     address: delivery.address || '',
@@ -3841,7 +3951,7 @@ function submitOrder(){
     deliveryTime: delivery.time || '',
     hoist: hoistLabel,
     items: items
-  };
+  }, authPayload());
 
   submittingOrder = true;
   showLoading(true);
@@ -3923,24 +4033,22 @@ function filterHistory(el){ if (el) toggleHistoryFilter(el); else renderHistory(
 // 初回起動 or 復元失敗時は空配列で起動 (renderHistory が空状態 UI を出す)。
 var HISTORY_DATA = (function(){
   try {
-    var saved = JSON.parse(localStorage.getItem('kenzai_history') || 'null');
+    var saved = JSON.parse(KC_STORE.getItem('kenzai_history') || 'null');
     if (Array.isArray(saved)) return saved;
   } catch(e) { console.warn('[history] localStorage parse failed', e); }
   return [];
 })();
 function persistHistory(){
-  try { localStorage.setItem('kenzai_history', JSON.stringify(HISTORY_DATA)); }
+  try { KC_STORE.setItem('kenzai_history', JSON.stringify(HISTORY_DATA)); }
   catch(e) { console.warn('[history] localStorage save failed', e); }
 }
 // LIFF プロフィール取得後に GAS から当該 lineUid の履歴を取得して上書き同期。
 // CORS 失敗・ネットワーク失敗時は localStorage の値を維持する (オフライン耐性)。
 function syncHistoryFromServer(){
   try {
-    var lineUid = localStorage.getItem('kenzai_line_uid');
-    if (!lineUid || typeof GAS_URL !== 'string' || !GAS_URL) return;
-    var url = GAS_URL + '?action=getOrders&lineUid=' + encodeURIComponent(lineUid);
-    fetch(url, { method: 'GET', mode: 'cors', credentials: 'omit', redirect: 'follow' })
-      .then(function(res){ return res.ok ? res.json() : null; })
+    if (!hasIdentity() || typeof GAS_URL !== 'string' || !GAS_URL) return;
+    // 本人確認つきで POST（LINE WORKS のトークンを URL に載せない）
+    gasPost(Object.assign({ action: 'getOrders' }, authPayload()))
       .then(function(data){
         if (data && data.ok && Array.isArray(data.orders)) {
           window.HISTORY_DATA = data.orders.map(normalizeServerOrder);
@@ -3969,7 +4077,7 @@ function syncProductsFromServer(){
         if (data && data.ok && Array.isArray(data.categories) && data.categories.length > 0) {
           var merged = mergeImageDefaults(data.categories, CATEGORIES_DEFAULTS);
           window.CATEGORIES = merged;
-          try { localStorage.setItem('kenzai_products_cache', JSON.stringify({ data: merged, ts: Date.now() })); } catch(e){}
+          try { KC_STORE.setItem('kenzai_products_cache', JSON.stringify({ data: merged, ts: Date.now() })); } catch(e){}
           if (typeof renderProducts === 'function') renderProducts();
           console.log('[products] synced ' + merged.length + ' categories from server');
         }
@@ -4233,22 +4341,28 @@ function loadOrderTracking(){ renderTrack(); }
 function refreshTracking(){ renderTrack(); showToast('更新しました', true); }
 function markReceived(id, ev){
   if (ev){ ev.stopPropagation(); }
-  // サーバー(スプシP列)を done に更新＝再同期で shipping に戻らない。lineUid で本人確認。
-  try {
-    if (typeof GAS_URL === 'string' && GAS_URL) {
-      fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{ 'Content-Type':'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action:'customerMarkReceived', orderId:id, lineUid: localStorage.getItem('kenzai_line_uid')||'' }) })
-        .catch(function(e){ console.warn('[receive] GAS post error', e); });
-    }
-  } catch(e){ console.warn('[receive] GAS post threw', e); }
-  // ローカルも即時 done（UI即時反映。サーバー反映は上の POST）
-  for (var i=0; i<HISTORY_DATA.length; i++){
-    if (HISTORY_DATA[i].id === id){ HISTORY_DATA[i].status = 'done'; break; }
-  }
-  persistHistory();
-  renderTrack();
-  if (typeof renderHistory === 'function') renderHistory();
-  showToast('納品を受領しました', true);
+  // サーバー(スプシP列)を納品完了に更新＝再同期で配送中に戻らない。本人確認は GAS（authPayload）。
+  showLoading(true);
+  gasPost(Object.assign({ action: 'customerMarkReceived', orderId: id }, authPayload()))
+    .then(function(r){
+      showLoading(false);
+      if (!r || !r.ok) {
+        showToast(r && /^not shippable/.test(r.error || '') ? 'この注文はまだ「配送中」になっていません' : '受け取りを記録できませんでした。もう一度お試しください', false);
+        return;
+      }
+      for (var i=0; i<HISTORY_DATA.length; i++){
+        if (HISTORY_DATA[i].id === id){ HISTORY_DATA[i].status = 'done'; break; }
+      }
+      persistHistory();
+      renderTrack();
+      if (typeof renderHistory === 'function') renderHistory();
+      showToast('納品を受領しました', true);
+    })
+    .catch(function(e){
+      showLoading(false);
+      console.warn('[receive] post failed', e);
+      showToast('通信できませんでした。電波の良い所でもう一度押してください', false);
+    });
 }
 
 /* -------------------- SITE LIST (sc-site-list) -------------------- */
