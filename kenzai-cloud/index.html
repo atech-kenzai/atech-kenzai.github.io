@@ -2087,6 +2087,66 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
   margin-top:6px;letter-spacing:-0.005em;
 }
 
+
+/* ============================================================
+   写真（v2.3 2026-11-17）：全部の画面に商品の写真・かごの中・商品の詳しい画面
+   ============================================================ */
+.ph{position:relative;flex-shrink:0;overflow:hidden;background:#FFFFFF;border:1px solid var(--separator);display:flex;align-items:center;justify-content:center;}
+.ph img{width:100%;height:100%;object-fit:cover;display:block;}
+.ph svg{width:74%;height:74%;display:block;}
+.ph-xs{width:30px;height:30px;border-radius:7px;}
+.ph-sm{width:40px;height:40px;border-radius:8px;}
+.ph-md{width:48px;height:48px;border-radius:8px;}
+.ph-lg{width:100%;aspect-ratio:1 / 1;border-radius:16px;}
+.ph-lg img{object-fit:contain;}
+.ph-kari{position:absolute;left:0;right:0;bottom:0;font-style:normal;font-size:8px;font-weight:700;letter-spacing:.04em;line-height:1.6;text-align:center;color:#fff;background:rgba(26,26,31,.58);pointer-events:none;}
+.ph-lg .ph-kari,.pcard-img .ph-kari{left:8px;right:auto;bottom:auto;top:8px;font-size:10px;padding:1px 7px;border-radius:5px;}
+.thumbs{display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.thumbs .more{font-size:11px;color:var(--label-tertiary);font-weight:600;white-space:nowrap;}
+.pcard-img{cursor:zoom-in;}
+.pcard-img img.pcard-thumb-img{width:82%;height:82%;border-radius:8px;}
+.cart-bar-info{cursor:pointer;}
+.cart-peek{color:var(--accent);font-weight:600;white-space:nowrap;}
+.h-thumbs,.tk-thumbs{margin-top:10px;}
+.tk-pin .tk-thumbs{margin-top:8px;}
+.dl-items-strip{display:flex;flex-direction:column;gap:8px;cursor:pointer;}
+.dl-items-strip[hidden]{display:none;}
+.cmp-items{align-items:center;}
+.cmp-items[hidden]{display:none;}
+.cmp-items .thumbs{justify-content:flex-end;gap:4px;}
+.cmp-spacer-top{flex-basis:16vh;}
+.hm-recent{padding:4px 18px 0;}
+.hm-recent-row{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;scrollbar-width:none;}
+.hm-recent-row::-webkit-scrollbar{display:none;}
+.hm-recent-item{flex:0 0 96px;background:var(--bg-elevated);border:1px solid var(--separator);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:6px;text-align:left;font:inherit;color:inherit;cursor:pointer;}
+.hm-recent-item .ph{width:78px;height:78px;border-radius:10px;}
+.hm-recent-name{font-size:11px;line-height:1.35;color:var(--label);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.7em;}
+.hm-recent-add{font-size:11px;font-weight:600;color:var(--accent);}
+.sheet-backdrop{position:fixed;inset:0;background:rgba(10,10,20,.36);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s ease;}
+.sheet-backdrop.show{opacity:1;pointer-events:auto;}
+.sheet{position:fixed;left:50%;bottom:0;transform:translate(-50%,110%);width:100%;max-width:480px;max-height:88vh;overflow-y:auto;background:var(--bg-elevated);border-radius:22px 22px 0 0;z-index:61;transition:transform .28s cubic-bezier(.2,.8,.2,1);padding:10px 20px calc(20px + env(safe-area-inset-bottom));box-shadow:var(--shadow-lg);visibility:hidden;}
+.sheet.show{transform:translate(-50%,0);visibility:visible;}
+.sheet{overscroll-behavior:contain;}
+body.sheet-open{overflow:hidden;}
+.sheet-grip{width:38px;height:5px;border-radius:3px;background:var(--bg-tertiary);margin:0 auto 14px;}
+.sheet-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px;}
+.sheet-title{font-size:17px;font-weight:700;color:var(--label);}
+.sheet-close{border:none;background:var(--bg-secondary);color:var(--label-secondary);border-radius:var(--r-pill);padding:7px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.ps-name{font-size:18px;font-weight:700;line-height:1.35;margin-top:14px;color:var(--label);}
+.ps-unit{font-size:13px;color:var(--label-secondary);margin-top:4px;}
+.ps-foot{display:flex;justify-content:space-between;align-items:center;margin-top:14px;}
+.ps-price{font-size:22px;font-weight:700;color:var(--label);font-variant-numeric:tabular-nums;}
+.ps-price .yen{font-size:14px;font-weight:500;color:var(--label-secondary);margin-right:1px;}
+.ps-note{font-size:11px;color:var(--label-tertiary);margin-top:10px;}
+.cs-list{display:flex;flex-direction:column;}
+.cs-item{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--separator);}
+.cs-item:last-child{border-bottom:none;}
+.cs-body{flex:1;min-width:0;}
+.cs-name{font-size:13px;font-weight:500;line-height:1.3;color:var(--label);}
+.cs-meta{font-size:11px;color:var(--label-tertiary);margin-top:3px;font-variant-numeric:tabular-nums;}
+.cs-total{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 12px;font-weight:700;font-variant-numeric:tabular-nums;}
+.cs-total b{font-size:20px;}
+@media (prefers-reduced-motion: reduce){ .sheet,.sheet-backdrop{transition:none;} }
 </style>
 </head>
 <body data-cc-id="cc-1" style="cursor: crosshair; background-color: rgb(242, 242, 248);">
@@ -2095,6 +2155,23 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
   <div class="spinner"></div>
 </div>
 <div class="toast" id="toast"></div>
+<div class="sheet-backdrop" id="sheet-backdrop" onclick="closeSheets()"></div>
+<div class="sheet" id="product-sheet" role="dialog" aria-modal="true" aria-labelledby="ps-name">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><div class="sheet-title">商品の詳しい内容</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
+  <div id="ps-photo"></div>
+  <div class="ps-name" id="ps-name"></div>
+  <div class="ps-unit" id="ps-unit"></div>
+  <div class="ps-foot"><div class="ps-price tabular" id="ps-price"></div><div class="qty-ctrl" id="ps-qty"></div></div>
+  <div class="ps-note" id="ps-note"></div>
+</div>
+<div class="sheet" id="cart-sheet" role="dialog" aria-modal="true" aria-labelledby="cs-title">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><div class="sheet-title" id="cs-title">かごの中</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
+  <div class="cs-list" id="cs-list"></div>
+  <div class="cs-total"><span>合計</span><b id="cs-total"></b></div>
+  <button class="btn btn-primary btn-block" id="cs-next" onclick="closeSheets();go('sc-delivery')">配送条件へ</button>
+</div>
 
 <!-- ============================================================
      LOGIN
@@ -2259,6 +2336,12 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
       </div>
     </div>
 
+    <!-- 前に頼んだもの（v2.3）：公開中の品だけ。押すとかごに入る -->
+    <div class="hm-recent" id="hm-recent" hidden>
+      <div class="hm-summary-title">前に頼んだもの</div>
+      <div class="hm-recent-row" id="hm-recent-row"></div>
+    </div>
+
     <!-- Monthly summary -->
     <div class="hm-summary">
       <div class="hm-summary-title">今月の発注サマリ</div>
@@ -2329,7 +2412,7 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
 
   <div class="bottom-bar">
     <div class="cart-bar">
-      <div class="cart-bar-info">
+      <div class="cart-bar-info" onclick="openCartSheet()" role="button" aria-label="かごの中を見る">
         <div class="cart-bar-count" id="cart-count">商品が選択されていません</div>
         <div class="cart-bar-total tabular" id="cart-total"><span class="yen">¥</span>0</div>
       </div>
@@ -2364,6 +2447,8 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
   </div>
 
   <div class="scroll dl-scroll">
+    <!-- 頼むもの（v2.3）：写真の並びだけ。押すとかごの中 -->
+    <div class="dl-section dl-items-strip" id="dl-items-strip" onclick="openCartSheet()" hidden></div>
     <!-- Site -->
     <div class="dl-section">
       <div class="dl-section-head">配送先現場</div>
@@ -2569,6 +2654,7 @@ input,textarea,select{font-family:inherit;color:inherit;letter-spacing:inherit;}
         <span class="cmp-row-label">合計金額</span>
         <span class="cmp-row-val cmp-row-val-amt tabular" id="cmp-order-amt"><span class="yen">¥</span>3,200</span>
       </div>
+      <div class="cmp-row cmp-items" id="cmp-items" hidden></div>
     </div>
 
     <div class="cmp-cta">
@@ -2808,11 +2894,11 @@ var MAX_SITES = 10;
 var CATEGORIES_DEFAULTS = [
   { name:'合板・ベニヤ', items:[
     { group:'ラワン合板', products:[
-      { name:'ラワン合板 3×6 厚4.0mm T1', price:1500, unit:'1枚', image:'rawan-kouzou-goban.webp' },
-      { name:'ラワン合板 3×6 厚5.5mm T1', price:1700, unit:'1枚', image:'rawan-kouzou-goban.webp' },
-      { name:'ラワン合板 3×6 厚9.0mm T1B', price:2000, unit:'1枚', image:'rawan-kouzou-goban.webp' },
-      { name:'ラワン合板 3×6 厚12.0mm T1B', price:2190, unit:'1枚', image:'rawan-kouzou-goban.webp' },
-      { name:'ラワン合板 3×6 厚15.0mm T1B', price:4060, unit:'1枚', image:'rawan-kouzou-goban.webp' }
+      { name:'ラワン合板 3×6 厚4.0mm T1', price:1500, unit:'1枚', image:'rawan-kouzou-goban.jpg' },
+      { name:'ラワン合板 3×6 厚5.5mm T1', price:1700, unit:'1枚', image:'rawan-kouzou-goban.jpg' },
+      { name:'ラワン合板 3×6 厚9.0mm T1B', price:2000, unit:'1枚', image:'rawan-kouzou-goban.jpg' },
+      { name:'ラワン合板 3×6 厚12.0mm T1B', price:2190, unit:'1枚', image:'rawan-kouzou-goban.jpg' },
+      { name:'ラワン合板 3×6 厚15.0mm T1B', price:4060, unit:'1枚', image:'rawan-kouzou-goban.jpg' }
     ]},
     { group:'ファルカタ合板', products:[
       { name:'ファルカタ合板 3×6 厚2.5mm T2', price:1000, unit:'1枚', image:'falcata-plywood.jpg' },
@@ -2827,17 +2913,17 @@ var CATEGORIES_DEFAULTS = [
     ]},
     { group:'その他合板', products:[
       { name:'パーチクルボード 2×6 厚20.0mm 4☆', price:1600, unit:'1枚', image:'particle-board.jpg' },
-      { name:'プラベニヤ 3×6', price:280, unit:'1枚', image:'plabeniya.webp' }
+      { name:'プラベニヤ 3×6', price:280, unit:'1枚', image:'plabeniya.jpg' }
     ]}
   ]},
   { name:'材木', items:[
     { group:'LVL', products:[
-      { name:'LVL(9入) 2.7m×40×30', price:340, unit:'1本', image:'lvl.webp' },
-      { name:'LVL(9入) 2.5m×40×30', price:320, unit:'1本', image:'lvl.webp' },
-      { name:'LVL(9A) 2.7m×45×30', price:380, unit:'1本', image:'lvl.webp' },
-      { name:'LVL(9A) 2.5m×45×30', price:360, unit:'1本', image:'lvl.webp' },
-      { name:'LVL(6A) 2.7m×45×35', price:460, unit:'1本', image:'lvl.webp' },
-      { name:'LVL(6入) 4m×45×36', price:1320, unit:'1本', image:'lvl.webp' }
+      { name:'LVL(9入) 2.7m×40×30', price:340, unit:'1本', image:'lvl.jpg' },
+      { name:'LVL(9入) 2.5m×40×30', price:320, unit:'1本', image:'lvl.jpg' },
+      { name:'LVL(9A) 2.7m×45×30', price:380, unit:'1本', image:'lvl.jpg' },
+      { name:'LVL(9A) 2.5m×45×30', price:360, unit:'1本', image:'lvl.jpg' },
+      { name:'LVL(6A) 2.7m×45×35', price:460, unit:'1本', image:'lvl.jpg' },
+      { name:'LVL(6入) 4m×45×36', price:1320, unit:'1本', image:'lvl.jpg' }
     ]},
     { group:'赤松', products:[
       { name:'赤松特1(12入) 4m×40×30', price:720, unit:'1本', image:'pine-kd-lumber.jpg' },
@@ -2861,10 +2947,10 @@ var CATEGORIES_DEFAULTS = [
   ]},
   { name:'棚板材', items:[
     { group:'ラワンランバー', products:[
-      { name:'ラワンランバー 3×6 厚15.0mm', price:3300, unit:'1枚', image:'rawan-lumber.webp' },
-      { name:'ラワンランバー 3×6 厚18.0mm', price:3700, unit:'1枚', image:'rawan-lumber.webp' },
-      { name:'ラワンランバー 3×6 厚21.0mm', price:4000, unit:'1枚', image:'rawan-lumber.webp' },
-      { name:'ラワンランバー 3×6 厚24.0mm', price:4300, unit:'1枚', image:'rawan-lumber.webp' }
+      { name:'ラワンランバー 3×6 厚15.0mm', price:3300, unit:'1枚', image:'rawan-lumber.jpg' },
+      { name:'ラワンランバー 3×6 厚18.0mm', price:3700, unit:'1枚', image:'rawan-lumber.jpg' },
+      { name:'ラワンランバー 3×6 厚21.0mm', price:4000, unit:'1枚', image:'rawan-lumber.jpg' },
+      { name:'ラワンランバー 3×6 厚24.0mm', price:4300, unit:'1枚', image:'rawan-lumber.jpg' }
     ]},
     { group:'白ポリランバー', products:[
       { name:'白ポリランバー 3×6 厚15.0mm', price:7300, unit:'1枚', image:'white-poly-lumber.png' },
@@ -2877,12 +2963,12 @@ var CATEGORIES_DEFAULTS = [
   ]},
   { name:'養生材', items:[
     { group:'マスキングテープ', products:[
-      { name:'マスキングテープ 和紙基材 黄色 7巻', price:509, unit:'1パック（7巻）', image:'masking-tape.webp' },
-      { name:'マスキングテープ 和紙基材 黄色 5巻', price:519, unit:'1パック（5巻）', image:'masking-tape.webp' },
-      { name:'マスキングテープ 和紙基材 黄色 3巻', price:479, unit:'1パック（3巻）', image:'masking-tape.webp' }
+      { name:'マスキングテープ 和紙基材 黄色 7巻', price:509, unit:'1パック（7巻）', image:'masking-tape.jpg' },
+      { name:'マスキングテープ 和紙基材 黄色 5巻', price:519, unit:'1パック（5巻）', image:'masking-tape.jpg' },
+      { name:'マスキングテープ 和紙基材 黄色 3巻', price:479, unit:'1パック（3巻）', image:'masking-tape.jpg' }
     ]},
     { group:'養生テープ', products:[
-      { name:'養生テープ さくら No.395N', price:369, unit:'1巻', image:'youjou-tape-sakura.webp' },
+      { name:'養生テープ さくら No.395N', price:369, unit:'1巻', image:'youjou-tape-sakura.jpg' },
       { name:'パイオランテープ 建築養生用', price:499, unit:'1巻', image:'pioran-tape.jpg' }
     ]},
     { group:'マスカー', products:[
@@ -2893,9 +2979,9 @@ var CATEGORIES_DEFAULTS = [
   ]},
   { name:'副資材・その他', items:[
     { group:'コーススレッド', products:[
-      { name:'コーススレッド ラッパ頭 ユニクロ 51mm全', price:1998, unit:'1箱（1000本）', image:'coarse-thread.webp' },
-      { name:'コーススレッド ラッパ頭 ユニクロ 65mm半', price:1398, unit:'1箱（500本）', image:'coarse-thread.webp' },
-      { name:'コーススレッド ラッパ頭 ユニクロ 75mm半', price:1398, unit:'1箱（400本）', image:'coarse-thread.webp' }
+      { name:'コーススレッド ラッパ頭 ユニクロ 51mm全', price:1998, unit:'1箱（1000本）', image:'coarse-thread.jpg' },
+      { name:'コーススレッド ラッパ頭 ユニクロ 65mm半', price:1398, unit:'1箱（500本）', image:'coarse-thread.jpg' },
+      { name:'コーススレッド ラッパ頭 ユニクロ 75mm半', price:1398, unit:'1箱（400本）', image:'coarse-thread.jpg' }
     ]},
     { group:'コンパネビス', products:[
       { name:'コンパネビス 28mm', price:1598, unit:'1箱（680本）', image:'konpane-screw.jpg' },
@@ -3332,6 +3418,7 @@ function renderProducts(){
   var area = document.getElementById('product-area');
   if (!area) return;
   area.innerHTML = '';
+  PRODUCT_REG = [];
   var cat = CATEGORIES[currentCatIndex];
   if (!cat) return;
   var any = false;
@@ -3357,9 +3444,10 @@ function renderProducts(){
       card.id = 'pcard-' + key;
 
       var imgHtml = productThumbnail(product.name, product.image);
+      var regIdx = PRODUCT_REG.push(product) - 1;
 
       card.innerHTML =
-        '<div class="pcard-img">'+imgHtml+'</div>' +
+        '<div class="pcard-img" onclick="openProductSheet('+regIdx+')" role="button" aria-label="'+escHtml(product.name)+'の写真を大きく見る">'+imgHtml+kariBadge(product.image)+'</div>' +
         '<div class="pcard-body">' +
           '<div class="pcard-name">'+escHtml(product.name)+'</div>' +
           '<div class="pcard-unit">'+escHtml(product.unit||'個')+(isCustom?' <span class="price-tag-cust">特別価格</span>':'')+'</div>' +
@@ -3378,17 +3466,195 @@ function renderProducts(){
 }
 
 function renderQtyControl(name, price, qty){
-  var n = escHtml(name);
+  // 品名は JSON の文字列にしてから属性に入れる（品名に ' や " があってもボタンが壊れない・スクリプトにならない）
+  var n = escHtml(JSON.stringify(String(name)));
+  var pr = Number(price) || 0;
   if (qty <= 0) {
-    return '<button class="qty-add" onclick="changeCartQty(\''+n+'\','+price+',1,this)" aria-label="追加">' +
+    return '<button class="qty-add" onclick="changeCartQty('+n+','+pr+',1,this)" aria-label="追加">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>' +
       '</button>';
   }
   return '<div class="qty-pill">' +
-    '<button class="qty-btn" onclick="changeCartQty(\''+n+'\','+price+',-1,this)">−</button>' +
+    '<button class="qty-btn" onclick="changeCartQty('+n+','+pr+',-1,this)" aria-label="減らす">−</button>' +
     '<span class="qty-num tabular">'+qty+'</span>' +
-    '<button class="qty-btn" onclick="changeCartQty(\''+n+'\','+price+',1,this)">+</button>' +
+    '<button class="qty-btn" onclick="changeCartQty('+n+','+pr+',1,this)" aria-label="増やす">+</button>' +
   '</div>';
+}
+
+
+// ===== 写真（v2.3）=====
+// 商品マスタ G列（画像ファイル名）で写真を当てる。注文履歴は品名しか持たないので、
+// 今の商品マスタを品名で引いて G列を使う。見つからなければ既定の写真、それも無ければ線画。
+// ファイル名の頭が kari_ の写真は仮（生成AI など）＝「イメージ」の印を付ける。
+var PRODUCT_REG = [];          // 商品カードの番号 → 商品（詳しい画面を開くため）
+var RECENT_ITEMS = [];         // ホーム「前に頼んだもの」の番号 → 商品
+var DEFAULT_IMAGE_MAP = null;
+function safeImageName(image){ return String(image == null ? '' : image).replace(/[^\w.\-]/g, ''); }
+function isKariImage(image){ return /^kari_/i.test(safeImageName(image)); }
+function kariBadge(image){ return isKariImage(image) ? '<i class="ph-kari">イメージ</i>' : ''; }
+function eachProduct(fn){
+  var cats = window.CATEGORIES || CATEGORIES || [];
+  for (var i = 0; i < cats.length; i++) {
+    var groups = cats[i].items || [];
+    for (var j = 0; j < groups.length; j++) {
+      var ps = groups[j].products || [];
+      for (var k = 0; k < ps.length; k++) { if (fn(ps[k], i) === true) return; }
+    }
+  }
+}
+// 今公開中の商品（単価あり）を品名で引く。無ければ null
+function findProductByName(name){
+  var hit = null, catIdx = -1;
+  eachProduct(function(p, i){ if (p && p.name === name) { hit = p; catIdx = i; return true; } });
+  if (hit) hit._catIdx = catIdx;
+  return hit;
+}
+function imageForName(name){
+  var p = findProductByName(name);
+  if (p && p.image) return p.image;
+  if (!DEFAULT_IMAGE_MAP) DEFAULT_IMAGE_MAP = buildDefaultImageMap(CATEGORIES_DEFAULTS);
+  return DEFAULT_IMAGE_MAP[name] || '';
+}
+function photoHtml(name, image, size){
+  var safe = safeImageName(image);
+  var inner;
+  if (safe) {
+    var fallback = productSvgFallback(name).replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    inner = '<img src="images/products/' + safe + '" alt="" loading="lazy" onerror="this.outerHTML=this.dataset.fallback" data-fallback="' + fallback + '">';
+  } else {
+    inner = productSvgFallback(name);
+  }
+  return '<div class="ph ' + (size || 'ph-sm') + '">' + inner + kariBadge(safe) + '</div>';
+}
+function thumbsHtml(names, max, size){
+  names = (names || []).filter(Boolean);
+  if (!names.length) return '';
+  var shown = names.slice(0, max);
+  var rest = names.length - shown.length;
+  return '<div class="thumbs">' + shown.map(function(n){ return photoHtml(n, imageForName(n), size || 'ph-sm'); }).join('') +
+    (rest > 0 ? '<span class="more">ほか' + rest + '品</span>' : '') + '</div>';
+}
+function orderThumbsHtml(o, max, cls){
+  var names = (o && Array.isArray(o.products)) ? o.products.map(function(p){ return p && p.name; }) : [];
+  var t = thumbsHtml(names, max, 'ph-sm');
+  return t ? '<div class="' + cls + '">' + t + '</div>' : '';
+}
+
+// --- 商品の詳しい画面 ---
+var openSheet = '';
+function showSheet(id){
+  ['product-sheet', 'cart-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.toggle('show', s === id); });
+  var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.add('show');
+  document.body.classList.add('sheet-open');
+  openSheet = id;
+  var cl = document.querySelector('#' + id + ' .sheet-close'); if (cl) { try { cl.focus({ preventScroll: true }); } catch (e) {} }
+}
+function closeSheets(){
+  ['product-sheet', 'cart-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.remove('show'); });
+  var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.remove('show');
+  document.body.classList.remove('sheet-open');
+  openSheet = ''; sheetProduct = null;
+}
+var sheetProduct = null;
+function openProductSheet(idx){
+  var p = PRODUCT_REG[idx];
+  if (!p) return;
+  sheetProduct = p;
+  renderProductSheet();
+  showSheet('product-sheet');
+}
+function renderProductSheet(){
+  var p = sheetProduct; if (!p) return;
+  var price = getPrice(p.name, p.price);
+  var qty = cart[p.name] ? cart[p.name].qty : 0;
+  document.getElementById('ps-photo').innerHTML = photoHtml(p.name, p.image, 'ph-lg');
+  document.getElementById('ps-name').textContent = p.name;
+  document.getElementById('ps-unit').textContent = '単位：' + (p.unit || '個');
+  document.getElementById('ps-price').innerHTML = '<span class="yen">¥</span>' + Number(price || 0).toLocaleString();
+  document.getElementById('ps-qty').innerHTML = renderQtyControl(p.name, price, qty);
+  var note = [];
+  if (p.photoNote && /^画像提供/.test(p.photoNote)) note.push(p.photoNote);
+  if (isKariImage(p.image)) note.push('写真はイメージです（本物の写真に差し替え中）');
+  document.getElementById('ps-note').textContent = note.join('　');
+}
+
+// --- かごの中 ---
+function openCartSheet(){
+  if (!Object.keys(cart).length) { showToast('まだ何も選んでいません', false); return; }
+  renderCartSheet();
+  showSheet('cart-sheet');
+}
+function renderCartSheet(){
+  var list = document.getElementById('cs-list');
+  if (!list) return;
+  var names = Object.keys(cart);
+  if (!names.length) { closeSheets(); return; }
+  var total = 0;
+  list.innerHTML = names.map(function(n){
+    var line = cart[n].price * cart[n].qty;
+    total += line;
+    var p = findProductByName(n);
+    return '<div class="cs-item">' + photoHtml(n, imageForName(n), 'ph-md') +
+      '<div class="cs-body"><div class="cs-name">' + escHtml(n) + '</div>' +
+      '<div class="cs-meta">' + escHtml((p && p.unit) || '') + '　@¥' + cart[n].price.toLocaleString() + '　小計 ¥' + line.toLocaleString() + '</div></div>' +
+      '<div class="qty-ctrl">' + renderQtyControl(n, cart[n].price, cart[n].qty) + '</div></div>';
+  }).join('');
+  document.getElementById('cs-total').textContent = '¥' + total.toLocaleString();
+  var title = document.getElementById('cs-title'); if (title) title.textContent = 'かごの中（' + names.length + '品目）';
+  var next = document.getElementById('cs-next');
+  if (next) { var act = document.querySelector('.screen.active'); next.hidden = !(act && act.id === 'sc-cart'); }
+}
+function refreshOpenSheets(){
+  if (openSheet === 'product-sheet') renderProductSheet();
+  if (openSheet === 'cart-sheet') renderCartSheet();
+  renderDeliveryItemsStrip();
+}
+
+// --- 配送条件：頼むもの（写真の並びだけ・配送の中身は変えない） ---
+function renderDeliveryItemsStrip(){
+  var el = document.getElementById('dl-items-strip');
+  if (!el) return;
+  var names = Object.keys(cart);
+  if (!names.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  el.innerHTML = '<div class="dl-section-head">頼むもの（' + names.length + '品目）<span class="cart-peek" style="float:right;font-size:12px">中身を見る ›</span></div>' + thumbsHtml(names, 5, 'ph-sm');
+}
+
+// --- ホーム：前に頼んだもの（公開中の品だけ・新しい順・10品まで） ---
+function renderRecentItems(){
+  var box = document.getElementById('hm-recent');
+  var row = document.getElementById('hm-recent-row');
+  if (!box || !row) return;
+  var seen = {}; RECENT_ITEMS = [];
+  (Array.isArray(HISTORY_DATA) ? HISTORY_DATA : []).forEach(function(o){
+    if (!o || o.status === 'cancel' || !Array.isArray(o.products)) return;
+    o.products.forEach(function(x){
+      if (!x || !x.name || seen[x.name] || RECENT_ITEMS.length >= 10) return;
+      seen[x.name] = true;
+      var p = findProductByName(x.name);
+      if (p && Number(p.price) > 0) RECENT_ITEMS.push(p);
+    });
+  });
+  if (!RECENT_ITEMS.length) { box.hidden = true; row.innerHTML = ''; return; }
+  box.hidden = false;
+  row.innerHTML = RECENT_ITEMS.map(function(p, i){
+    return '<button class="hm-recent-item" onclick="orderFromRecent(' + i + ')">' + photoHtml(p.name, p.image, 'ph-md') +
+      '<span class="hm-recent-name">' + escHtml(p.name) + '</span><span class="hm-recent-add">＋ かごへ</span></button>';
+  }).join('');
+}
+function orderFromRecent(i){
+  var p = RECENT_ITEMS[i];
+  if (!p) return;
+  if (!Object.keys(cart).length) startOrder(); else go('sc-cart');
+  var found = findProductByName(p.name);
+  if (found && found._catIdx >= 0) {
+    currentCatIndex = found._catIdx;
+    var tabs = document.querySelectorAll('#cat-tabs .seg-tab');
+    tabs.forEach(function(t, k){ t.classList.toggle('active', k === found._catIdx); });
+    renderProducts();
+  }
+  changeCartQty(p.name, getPrice(p.name, p.price), 1);
+  showToast('「' + p.name + '」をかごに入れました', true);
 }
 
 // ===== 商品サムネイル =====
@@ -3503,6 +3769,7 @@ function changeCartQty(name, price, delta, btn) {
   var pcard = document.getElementById('pcard-'+key);
   if (pcard) pcard.classList.toggle('has-qty', newQty>0);
   updateCartBar();
+  refreshOpenSheets();
 }
 
 function updateCartBar() {
@@ -3517,7 +3784,8 @@ function updateCartBar() {
   if (!totalEl) return;
   totalEl.innerHTML = '<span class="yen">¥</span>' + total.toLocaleString();
   var itemCount = Object.keys(cart).length;
-  countEl.textContent = itemCount===0 ? '商品が選択されていません' : (itemCount + '品目 / 計' + count + '個 選択中');
+  if (itemCount === 0) countEl.textContent = '商品が選択されていません';
+  else countEl.innerHTML = escHtml(itemCount + '品目 / 計' + count + '個') + ' <span class="cart-peek">中身を見る ›</span>';
   btn.disabled = itemCount === 0;
 }
 
@@ -3774,7 +4042,7 @@ function renderConfirmScreen(){
     var line = cart[name].price * cart[name].qty;
     subtotal += line;
     html += '<div class="cf-item">'+
-      '<div class="cf-item-thumb">IMG</div>'+
+      photoHtml(name, imageForName(name), 'ph-md')+
       '<div class="cf-item-body">'+
         '<div class="cf-item-name">'+escHtml(name)+'</div>'+
         '<div class="cf-item-meta">'+
@@ -4017,6 +4285,11 @@ function onOrderAccepted(r, oid, dl, now){
   var dEl   = document.getElementById('cmp-order-date'); if (dEl)   dEl.textContent   = dl;
   var tEl   = document.getElementById('cmp-order-time'); if (tEl)   tEl.textContent   = delivery.time || '—';
   var aEl   = document.getElementById('cmp-order-amt');  if (aEl)   aEl.innerHTML     = '<span class="yen">¥</span>'+subtotal.toLocaleString();
+  var ci = document.getElementById('cmp-items');
+  if (ci) {
+    ci.hidden = !products.length;
+    ci.innerHTML = products.length ? ('<span class="cmp-row-label">頼んだもの</span>' + thumbsHtml(products.map(function(x){ return x.name; }), 5, 'ph-xs')) : '';
+  }
   var sc = document.getElementById('sc-complete');
   if (sc) { sc.classList.remove('active'); void sc.offsetWidth; }
   go('sc-complete');
@@ -4060,6 +4333,7 @@ function syncHistoryFromServer(){
             showToast('通信が切れていた注文（' + pend.id + '）は受け付け済みでした。注文履歴に入っています', true);
           }
           if (typeof renderHistory === 'function') renderHistory();
+          loadMonthlySummary(); renderRecentItems();
           console.log('[history] synced ' + data.orders.length + ' orders from server');
         }
       })
@@ -4079,6 +4353,7 @@ function syncProductsFromServer(){
           window.CATEGORIES = merged;
           try { KC_STORE.setItem('kenzai_products_cache', JSON.stringify({ data: merged, ts: Date.now() })); } catch(e){}
           if (typeof renderProducts === 'function') renderProducts();
+          if (typeof renderRecentItems === 'function') renderRecentItems();
           console.log('[products] synced ' + merged.length + ' categories from server');
         }
       })
@@ -4114,6 +4389,7 @@ function renderHistory(){
       '<div class="h-mid">'+
         '<div class="h-site">'+escHtml(r.site)+'</div>'+
         '<div class="h-items">'+escHtml(r.items)+'</div>'+
+        orderThumbsHtml(r, 3, 'h-thumbs')+
       '</div>'+
       '<div class="h-foot">'+
         '<span class="h-badge h-badge-'+r.status+'">'+statusLabel(r.status)+'</span>'+
@@ -4179,7 +4455,7 @@ function renderOrderDetail(id){
   var html = '';
   (o.products || []).forEach(function(p){
     var line = (p.price||0) * (p.qty||0);
-    html += '<div class="cf-item"><div class="cf-item-thumb">IMG</div>'+
+    html += '<div class="cf-item">'+photoHtml(p.name, imageForName(p.name), 'ph-md')+
       '<div class="cf-item-body"><div class="cf-item-name">'+escHtml(p.name)+'</div>'+
       '<div class="cf-item-meta"><span class="cf-item-qty">×'+(p.qty||0)+'</span><span>@¥'+(p.price||0).toLocaleString()+'</span></div></div>'+
       '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div></div>';
@@ -4297,6 +4573,7 @@ function renderTrack(){
       '<div class="tk-pin-site">'+escHtml(o.site)+'</div>'+
       '<div class="tk-pin-time tabular">'+escHtml(o.timeWindow||'—')+'</div>'+
       '<div class="tk-pin-meta">'+itemCountOf(o)+'品目 / ¥'+(o.amount||0).toLocaleString()+'</div>'+
+      orderThumbsHtml(o, 3, 'tk-thumbs')+
     '</div>';
   }).join('');
 
@@ -4331,6 +4608,7 @@ function renderTrack(){
         '<div class="tk-site">'+escHtml(o.site)+'</div>'+
         '<div class="tk-addr">'+escHtml(o.address||'')+'</div>'+
         '<div class="tk-items tabular">'+itemCountOf(o)+'品目 / <span class="tk-amt">¥'+(o.amount||0).toLocaleString()+'</span></div>'+
+        orderThumbsHtml(o, 3, 'tk-thumbs')+
       '</div>'+
       '<div class="tk-stepper-wrap">'+stepperHtml+'</div>'+
       actionBtn+
@@ -4490,6 +4768,7 @@ function saveSiteWithAnken(anken){
    Utilities
    ----------------------------------------------------------- */
 function go(id) {
+  if (typeof closeSheets === 'function' && openSheet) closeSheets();
   document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
   var target = document.getElementById(id);
   if (target) target.classList.add('active');
@@ -4499,13 +4778,13 @@ function go(id) {
     renderProducts();
     updateCartBar();
   }
-  if (id === 'sc-delivery') { renderDeliveryScreen(); }
+  if (id === 'sc-delivery') { renderDeliveryScreen(); renderDeliveryItemsStrip(); }
   if (id === 'sc-confirm')  { renderConfirmScreen(); }
   if (id === 'sc-track')    { renderTrack(); }
   if (id === 'sc-site-list'){ renderSiteListScreen(); }
   if (id === 'sc-site-register'){ resetSiteRegister(); }
   if (id === 'sc-history')  { loadHistory(); }
-  if (id === 'sc-home')     { loadMonthlySummary(); }
+  if (id === 'sc-home')     { loadMonthlySummary(); renderRecentItems(); }
 }
 
 function showLoading(show) { document.getElementById('loading-overlay').classList.toggle('show', show); }
