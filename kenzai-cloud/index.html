@@ -2146,6 +2146,17 @@ body.sheet-open{overflow:hidden;}
 .cs-meta{font-size:11px;color:var(--label-tertiary);margin-top:3px;font-variant-numeric:tabular-nums;}
 .cs-total{display:flex;justify-content:space-between;align-items:baseline;padding:14px 0 12px;font-weight:700;font-variant-numeric:tabular-nums;}
 .cs-total b{font-size:20px;}
+.size-btn{border:1px solid var(--accent);background:var(--bg-elevated);color:var(--accent);border-radius:var(--r-pill);padding:7px 12px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.pcard-price .price-later{font-size:11px;font-weight:600;color:var(--label-secondary);}
+.sz-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.sz-field{display:flex;flex-direction:column;gap:4px;}
+.sz-field label{font-size:12px;color:var(--label-secondary);font-weight:600;}
+.sz-field input{font:inherit;font-size:16px;padding:10px 12px;border:1px solid var(--separator-strong);border-radius:10px;background:var(--bg-elevated);color:var(--label);width:100%;box-sizing:border-box;}
+.sz-field input:focus{outline:2px solid var(--accent);outline-offset:1px;}
+.sz-field.wide{grid-column:1 / -1;}
+.sz-err{color:var(--red);font-size:12px;min-height:1.4em;margin-top:8px;}
+.sz-hint{font-size:12px;color:var(--label-tertiary);margin-top:6px;line-height:1.5;}
+.price-later-note{font-size:12px;color:var(--label-secondary);margin-top:8px;}
 @media (prefers-reduced-motion: reduce){ .sheet,.sheet-backdrop{transition:none;} }
 </style>
 </head>
@@ -2164,6 +2175,20 @@ body.sheet-open{overflow:hidden;}
   <div class="ps-unit" id="ps-unit"></div>
   <div class="ps-foot"><div class="ps-price tabular" id="ps-price"></div><div class="qty-ctrl" id="ps-qty"></div></div>
   <div class="ps-note" id="ps-note"></div>
+</div>
+<div class="sheet" id="size-sheet" role="dialog" aria-modal="true" aria-labelledby="sz-title">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><div class="sheet-title" id="sz-title">寸法を書いて頼む</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
+  <div style="display:flex;gap:12px;align-items:center"><div id="sz-photo"></div><div><div class="cs-name" id="sz-name" style="font-size:15px;font-weight:700"></div><div class="sz-hint">単価は手配のときに決まります（合計には入りません）</div></div></div>
+  <div class="sz-grid">
+    <div class="sz-field"><label for="sz-t">厚み（mm）</label><input id="sz-t" oninput="document.getElementById('sz-err').textContent=''" inputmode="decimal" placeholder="例 20"></div>
+    <div class="sz-field"><label for="sz-q">枚数</label><input id="sz-q" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" value="1"></div>
+    <div class="sz-field"><label for="sz-w">幅（mm）</label><input id="sz-w" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" placeholder="例 250"></div>
+    <div class="sz-field"><label for="sz-l">長さ（mm）</label><input id="sz-l" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" placeholder="例 1820"></div>
+    <div class="sz-field wide"><label for="sz-m">メモ（使う場所など・なくてよい）</label><input id="sz-m" oninput="document.getElementById('sz-err').textContent=''" maxlength="30" placeholder="例 枕棚"></div>
+  </div>
+  <div class="sz-err" id="sz-err" role="alert"></div>
+  <button class="btn btn-primary btn-block" onclick="addSizedToCart()">かごに入れる</button>
 </div>
 <div class="sheet" id="cart-sheet" role="dialog" aria-modal="true" aria-labelledby="cs-title">
   <div class="sheet-grip"></div>
@@ -2602,6 +2627,10 @@ body.sheet-open{overflow:hidden;}
         <div class="cf-pay-row">
           <span class="cf-pay-row-label">商品代金</span>
           <span class="cf-pay-row-val tabular" id="conf-subtotal">¥0</span>
+        </div>
+        <div class="cf-pay-row" id="conf-later-row" style="display:none;">
+          <span class="cf-pay-row-label">寸法指定の品</span>
+          <span class="cf-pay-row-val cf-pay-row-quote">手配のときに単価が決まります</span>
         </div>
         <div class="cf-pay-row" id="conf-hoist-row" style="display:none;">
           <span class="cf-pay-row-label">階段上げ料</span>
@@ -3400,8 +3429,8 @@ function productMatchesFilter(p){
   var n = p.name;
   if (currentFilter === '3x6')  return n.indexOf('3×6') >= 0;
   if (currentFilter === '4x8')  return n.indexOf('4×8') >= 0;
-  if (currentFilter === 'under1000') return p.price <= 1000;
-  if (currentFilter === 'under3000') return p.price <= 3000;
+  if (currentFilter === 'under1000') return !p.custom && p.price <= 1000;
+  if (currentFilter === 'under3000') return !p.custom && p.price <= 3000;
   return true;
 }
 function productMatchesSearch(p){
@@ -3452,8 +3481,11 @@ function renderProducts(){
           '<div class="pcard-name">'+escHtml(product.name)+'</div>' +
           '<div class="pcard-unit">'+escHtml(product.unit||'個')+(isCustom?' <span class="price-tag-cust">特別価格</span>':'')+'</div>' +
           '<div class="pcard-foot">' +
-            '<div class="pcard-price tabular"><span class="yen">¥</span>'+actualPrice.toLocaleString()+'</div>' +
-            '<div class="qty-ctrl" id="qty-ctrl-'+key+'">'+renderQtyControl(product.name, actualPrice, qty)+'</div>' +
+            (product.custom
+              ? '<div class="pcard-price"><span class="price-later">単価は手配時</span></div>' +
+                '<button class="size-btn" onclick="openSizeSheet('+regIdx+')">寸法を書く</button>'
+              : '<div class="pcard-price tabular"><span class="yen">¥</span>'+actualPrice.toLocaleString()+'</div>' +
+                '<div class="qty-ctrl" id="qty-ctrl-'+key+'">'+renderQtyControl(product.name, actualPrice, qty)+'</div>') +
           '</div>' +
         '</div>';
       grid.appendChild(card);
@@ -3511,6 +3543,7 @@ function findProductByName(name){
 }
 function imageForName(name){
   var p = findProductByName(name);
+  if (!p) { var cs = parseCustomName(name); if (cs) p = findProductByName(cs.base); }
   if (p && p.image) return p.image;
   if (!DEFAULT_IMAGE_MAP) DEFAULT_IMAGE_MAP = buildDefaultImageMap(CATEGORIES_DEFAULTS);
   return DEFAULT_IMAGE_MAP[name] || '';
@@ -3543,14 +3576,14 @@ function orderThumbsHtml(o, max, cls){
 // --- 商品の詳しい画面 ---
 var openSheet = '';
 function showSheet(id){
-  ['product-sheet', 'cart-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.toggle('show', s === id); });
+  ['product-sheet', 'cart-sheet', 'size-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.toggle('show', s === id); });
   var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.add('show');
   document.body.classList.add('sheet-open');
   openSheet = id;
   var cl = document.querySelector('#' + id + ' .sheet-close'); if (cl) { try { cl.focus({ preventScroll: true }); } catch (e) {} }
 }
 function closeSheets(){
-  ['product-sheet', 'cart-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.remove('show'); });
+  ['product-sheet', 'cart-sheet', 'size-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.remove('show'); });
   var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.remove('show');
   document.body.classList.remove('sheet-open');
   openSheet = ''; sheetProduct = null;
@@ -3570,12 +3603,63 @@ function renderProductSheet(){
   document.getElementById('ps-photo').innerHTML = photoHtml(p.name, p.image, 'ph-lg');
   document.getElementById('ps-name').textContent = p.name;
   document.getElementById('ps-unit').textContent = '単位：' + (p.unit || '個');
-  document.getElementById('ps-price').innerHTML = '<span class="yen">¥</span>' + Number(price || 0).toLocaleString();
-  document.getElementById('ps-qty').innerHTML = renderQtyControl(p.name, price, qty);
+  if (p.custom) {
+    document.getElementById('ps-price').innerHTML = '<span class="price-later">単価は手配時</span>';
+    document.getElementById('ps-qty').innerHTML = '<button class="size-btn" onclick="openSizeSheetFor(sheetProduct)">寸法を書く</button>';
+  } else {
+    document.getElementById('ps-price').innerHTML = '<span class="yen">¥</span>' + Number(price || 0).toLocaleString();
+    document.getElementById('ps-qty').innerHTML = renderQtyControl(p.name, price, qty);
+  }
   var note = [];
   if (p.photoNote && /^画像提供/.test(p.photoNote)) note.push(p.photoNote);
   if (isKariImage(p.image)) note.push('写真はイメージです（本物の写真に差し替え中）');
   document.getElementById('ps-note').textContent = note.join('　');
+}
+
+// --- 寸法を書いて頼む品（v2.4）---
+// 品名の書き方はサーバー（_kc_customName）と同じ：「元の品名 厚20 幅250×長1820（メモ）」
+var SIZE_LIMITS = { t: [1, 100], w: [10, 1220], l: [10, 4000] };
+function customName(base, z){ return base + ' 厚' + z.t + ' 幅' + z.w + '×長' + z.l + (z.memo ? '（' + z.memo + '）' : ''); }
+function parseCustomName(name){
+  var m = String(name || '').match(/^(.+) 厚(\d{1,3}(?:\.\d)?) 幅(\d{1,4})×長(\d{1,4})(?:（([^（）]*)）)?$/);
+  return m ? { base: m[1], t: m[2], w: m[3], l: m[4], memo: m[5] || '' } : null;
+}
+// 単価が手配のときに決まる行（注文履歴では 0円で記録されている）
+function isLaterPriced(p){ return !!p && !(Number(p.price) > 0) && !!parseCustomName(p.name); }
+function cartHasCustom(){ return Object.keys(cart).some(function(k){ return cart[k] && cart[k].custom; }); }
+function toHalfNum(v){ return String(v == null ? '' : v).replace(/[０-９]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).replace(/[．。]/g, '.').trim(); }
+function normSize(t, w, l, memo){
+  t = toHalfNum(t); w = toHalfNum(w); l = toHalfNum(l);
+  if (!/^\d{1,3}(\.\d)?$/.test(t) || !/^\d{1,4}$/.test(w) || !/^\d{1,4}$/.test(l)) return null;
+  var tn = Number(t), wn = Number(w), ln = Number(l), L = SIZE_LIMITS;
+  if (tn < L.t[0] || tn > L.t[1] || wn < L.w[0] || wn > L.w[1] || ln < L.l[0] || ln > L.l[1]) return null;
+  var mm = Array.from(String(memo || '').replace(/[\r\n\t×@()（）]/g, ' ').replace(/\s+/g, ' ').trim()).slice(0, 30).join('').trim();
+  return { t: String(tn), w: String(wn), l: String(ln), memo: mm };
+}
+var sizeProduct = null;
+function openSizeSheet(idx){ var p = PRODUCT_REG[idx]; if (p) openSizeSheetFor(p); }
+function openSizeSheetFor(p){
+  sizeProduct = p;
+  document.getElementById('sz-photo').innerHTML = photoHtml(p.name, p.image, 'ph-md');
+  document.getElementById('sz-name').textContent = p.name;
+  ['sz-t', 'sz-w', 'sz-l', 'sz-m'].forEach(function(id){ document.getElementById(id).value = ''; });
+  document.getElementById('sz-q').value = '1';
+  document.getElementById('sz-err').textContent = '';
+  showSheet('size-sheet');
+}
+function addSizedToCart(){
+  var p = sizeProduct; if (!p) return;
+  var err = document.getElementById('sz-err');
+  var z = normSize(document.getElementById('sz-t').value, document.getElementById('sz-w').value, document.getElementById('sz-l').value, document.getElementById('sz-m').value);
+  if (!z) { err.textContent = '厚み（1〜100）・幅（10〜1220）・長さ（10〜4000）を mm の数字で書いてください'; return; }
+  var q = toHalfNum(document.getElementById('sz-q').value);
+  if (!/^\d{1,4}$/.test(q) || Number(q) < 1) { err.textContent = '枚数を1以上の数字で書いてください'; return; }
+  var key = customName(p.name, z);
+  if (cart[key]) cart[key].qty += Number(q);
+  else cart[key] = { price: 0, qty: Number(q), custom: { sku: p.sku || '', base: p.name, t: z.t, w: z.w, l: z.l, memo: z.memo } };
+  updateCartBar();
+  closeSheets();
+  showToast('かごに入れました：' + key + ' ×' + q, true);
 }
 
 // --- かごの中 ---
@@ -3596,10 +3680,10 @@ function renderCartSheet(){
     var p = findProductByName(n);
     return '<div class="cs-item">' + photoHtml(n, imageForName(n), 'ph-md') +
       '<div class="cs-body"><div class="cs-name">' + escHtml(n) + '</div>' +
-      '<div class="cs-meta">' + escHtml((p && p.unit) || '') + '　@¥' + cart[n].price.toLocaleString() + '　小計 ¥' + line.toLocaleString() + '</div></div>' +
+      '<div class="cs-meta">' + (cart[n].custom ? '寸法指定・単価は手配のときに' : escHtml((p && p.unit) || '') + '　@¥' + cart[n].price.toLocaleString() + '　小計 ¥' + line.toLocaleString()) + '</div></div>' +
       '<div class="qty-ctrl">' + renderQtyControl(n, cart[n].price, cart[n].qty) + '</div></div>';
   }).join('');
-  document.getElementById('cs-total').textContent = '¥' + total.toLocaleString();
+  document.getElementById('cs-total').textContent = '¥' + total.toLocaleString() + (cartHasCustom() ? '＋寸法指定の品（手配時）' : '');
   var title = document.getElementById('cs-title'); if (title) title.textContent = 'かごの中（' + names.length + '品目）';
   var next = document.getElementById('cs-next');
   if (next) { var act = document.querySelector('.screen.active'); next.hidden = !(act && act.id === 'sc-cart'); }
@@ -3629,10 +3713,13 @@ function renderRecentItems(){
   (Array.isArray(HISTORY_DATA) ? HISTORY_DATA : []).forEach(function(o){
     if (!o || o.status === 'cancel' || !Array.isArray(o.products)) return;
     o.products.forEach(function(x){
-      if (!x || !x.name || seen[x.name] || RECENT_ITEMS.length >= 10) return;
-      seen[x.name] = true;
-      var p = findProductByName(x.name);
-      if (p && Number(p.price) > 0) RECENT_ITEMS.push(p);
+      if (!x || !x.name || RECENT_ITEMS.length >= 10) return;
+      var cs = parseCustomName(x.name);
+      var nm = (cs && isLaterPriced(x)) ? cs.base : x.name;
+      if (seen[nm]) return;
+      seen[nm] = true;
+      var p = findProductByName(nm);
+      if (p && (p.custom || Number(p.price) > 0)) RECENT_ITEMS.push(p);
     });
   });
   if (!RECENT_ITEMS.length) { box.hidden = true; row.innerHTML = ''; return; }
@@ -3653,6 +3740,7 @@ function orderFromRecent(i){
     tabs.forEach(function(t, k){ t.classList.toggle('active', k === found._catIdx); });
     renderProducts();
   }
+  if (p.custom) { openSizeSheetFor(p); return; }
   changeCartQty(p.name, getPrice(p.name, p.price), 1);
   showToast('「' + p.name + '」をかごに入れました', true);
 }
@@ -4047,13 +4135,15 @@ function renderConfirmScreen(){
         '<div class="cf-item-name">'+escHtml(name)+'</div>'+
         '<div class="cf-item-meta">'+
           '<span class="cf-item-qty">×'+cart[name].qty+'</span>'+
-          '<span>@¥'+cart[name].price.toLocaleString()+'</span>'+
+          (cart[name].custom ? '<span>寸法指定</span>' : '<span>@¥'+cart[name].price.toLocaleString()+'</span>')+
         '</div>'+
       '</div>'+
-      '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div>'+
+      (cart[name].custom ? '<div class="cf-item-amt" style="font-size:12px">手配時</div>' : '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div>')+
     '</div>';
   });
   if (items) items.innerHTML = html || '<div class="cf-item"><div class="cf-item-body"><div class="cf-item-name">商品がありません</div></div></div>';
+  var lateRow = document.getElementById('conf-later-row');
+  if (lateRow) lateRow.style.display = cartHasCustom() ? 'flex' : 'none';
 
   // Delivery info
   var info = document.getElementById('conf-delivery-info');
@@ -4130,7 +4220,7 @@ function savePendingOrder(p){ try { KC_STORE.setItem(PENDING_ORDER_KEY, JSON.str
 function clearPendingOrder(){ try { KC_STORE.removeItem(PENDING_ORDER_KEY); } catch(e){} }
 function orderSignature(items){
   return JSON.stringify({
-    items: items.map(function(i){ return [i.sku || i.name, i.qty]; }).sort(),
+    items: items.map(function(i){ return [i.sku || i.name, i.qty, i.spec ? [i.spec.t, i.spec.w, i.spec.l, i.spec.memo || ''].join('/') : '']; }).sort(),
     anken: delivery.anken, site: delivery.siteId, date: delivery.date, time: delivery.time, hoist: delivery.hoist
   });
 }
@@ -4153,6 +4243,7 @@ var ORDER_ERROR_MESSAGES = {
   anken_required: '現場に案件番号がありません。現場の一覧から編集してください',
   unknown_item: '取り扱いが変わった品があります。カートから外してもう一度お試しください',
   bad_qty: '数量を確かめてください',
+  bad_size: '寸法を確かめてください（厚み1〜100・幅10〜1220・長さ10〜4000mm）',
   no_items: '商品が選択されていません',
   bad_delivery_date: '希望日を選び直してください',
   order_id_conflict: 'もう一度お試しください',
@@ -4165,7 +4256,9 @@ function submitOrder(){
   if (submittingOrder) return;
   var items = [];
   Object.keys(cart).forEach(function(n){
-    items.push({ sku: findSkuByName(n), name: n, qty: cart[n].qty });
+    var c = cart[n].custom;
+    if (c) items.push({ sku: c.sku, name: c.base, qty: cart[n].qty, spec: { t: c.t, w: c.w, l: c.l, memo: c.memo } });
+    else items.push({ sku: findSkuByName(n), name: n, qty: cart[n].qty });
   });
   if (!items.length) { showToast('商品が選択されていません', false); return; }
   if (!hasIdentity()) { showToast('LINE または LINE WORKS のアプリから開いてください', false); return; }
@@ -4231,6 +4324,7 @@ function submitOrder(){
         var code = r && r.error;
         var msg = ORDER_ERROR_MESSAGES[code] || ('注文できませんでした（' + (code || '不明なエラー') + '）');
         if (code === 'unknown_item' && r.detail) msg = '「' + r.detail + '」は今は注文できません。カートから外してください';
+        if (code === 'bad_size' && r.detail) msg = '「' + r.detail + '」の寸法を確かめてください。かごから外して、もう一度寸法を書いて入れてください';
         clearPendingOrder();   // 断られた注文は中身を直して出し直すので、次は新しいIDにする
         showToast(msg, false);
         return;
@@ -4419,7 +4513,10 @@ function reorderFromHistory(id, ev){
     if (cart[p.name]) {
       cart[p.name].qty += p.qty;
     } else {
-      cart[p.name] = { price: p.price, qty: p.qty };
+      var cs = isLaterPriced(p) ? parseCustomName(p.name) : null;
+      var base = cs ? findProductByName(cs.base) : null;
+      if (cs && base && base.custom) cart[p.name] = { price: 0, qty: p.qty, custom: { sku: base.sku || '', base: cs.base, t: cs.t, w: cs.w, l: cs.l, memo: cs.memo } };
+      else cart[p.name] = { price: p.price, qty: p.qty };
     }
     added += p.qty;
   });
@@ -4457,8 +4554,8 @@ function renderOrderDetail(id){
     var line = (p.price||0) * (p.qty||0);
     html += '<div class="cf-item">'+photoHtml(p.name, imageForName(p.name), 'ph-md')+
       '<div class="cf-item-body"><div class="cf-item-name">'+escHtml(p.name)+'</div>'+
-      '<div class="cf-item-meta"><span class="cf-item-qty">×'+(p.qty||0)+'</span><span>@¥'+(p.price||0).toLocaleString()+'</span></div></div>'+
-      '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div></div>';
+      '<div class="cf-item-meta"><span class="cf-item-qty">×'+(p.qty||0)+'</span>'+(isLaterPriced(p) ? '<span>寸法指定</span>' : '<span>@¥'+(p.price||0).toLocaleString()+'</span>')+'</div></div>'+
+      (isLaterPriced(p) ? '<div class="cf-item-amt" style="font-size:12px">手配時</div>' : '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div>')+'</div>';
   });
   var itemsEl = document.getElementById('od-items-list');
   if (itemsEl) itemsEl.innerHTML = html || '<div class="cf-item"><div class="cf-item-body"><div class="cf-item-name">商品情報なし</div></div></div>';
