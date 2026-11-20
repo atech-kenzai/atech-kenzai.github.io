@@ -2157,6 +2157,34 @@ body.sheet-open{overflow:hidden;}
 .sz-err{color:var(--red);font-size:12px;min-height:1.4em;margin-top:8px;}
 .sz-hint{font-size:12px;color:var(--label-tertiary);margin-top:6px;line-height:1.5;}
 .price-later-note{font-size:12px;color:var(--label-secondary);margin-top:8px;}
+.addon-banner{margin:8px 18px 0;padding:10px 12px;border-radius:12px;background:var(--accent-fill);color:var(--accent);font-size:12.5px;line-height:1.5;display:flex;gap:10px;align-items:center;justify-content:space-between;}
+.addon-banner[hidden],.sz-field[hidden]{display:none;}
+.addon-banner b{font-weight:700;}
+.addon-banner button{flex-shrink:0;border:1px solid var(--accent);background:var(--bg-elevated);color:var(--accent);border-radius:var(--r-pill);padding:5px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer;}
+.cut-link{display:block;margin-top:4px;border:none;background:none;padding:0;color:var(--accent);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;text-align:left;}
+.h-badge-add{background:var(--accent-fill-2);color:var(--accent);margin-left:6px;}
+.od-actions{display:flex;gap:10px;}
+.od-actions .btn{flex:1;height:50px;font-size:15px;}
+.od-note{font-size:12.5px;color:var(--label-secondary);text-align:center;line-height:1.5;}
+.btn-danger-line{border:1px solid var(--red);color:var(--red);background:var(--bg-elevated);}
+.site-box{background:var(--bg-elevated);border:1px solid var(--separator);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;}
+.site-rule{display:grid;grid-template-columns:7.5em 1fr;gap:8px;font-size:13px;line-height:1.5;}
+.site-rule .k{color:var(--label-tertiary);}
+.site-rule .v{color:var(--label);white-space:pre-wrap;word-break:break-word;}
+.site-empty{font-size:13px;color:var(--label-tertiary);}
+.mark-box{margin-top:10px;}
+.mark-box img{width:100%;border-radius:12px;border:1px solid var(--separator);display:block;}
+.mark-cap{font-size:12px;color:var(--label-secondary);margin-top:4px;}
+.conf-note{width:100%;box-sizing:border-box;min-height:70px;font:inherit;font-size:15px;padding:10px 12px;border:1px solid var(--separator-strong);border-radius:12px;background:var(--bg-elevated);color:var(--label);resize:vertical;}
+.rl-field{display:flex;flex-direction:column;gap:4px;margin-top:10px;}
+.rl-field label{font-size:12px;color:var(--label-secondary);font-weight:600;}
+.rl-field textarea{font:inherit;font-size:15px;padding:9px 11px;border:1px solid var(--separator-strong);border-radius:10px;background:var(--bg-elevated);color:var(--label);min-height:44px;resize:vertical;}
+.draw-wrap{position:relative;border:1px solid var(--separator);border-radius:12px;overflow:hidden;background:#fff;touch-action:none;}
+.draw-wrap canvas{display:block;width:100%;height:auto;touch-action:none;}
+.draw-empty{padding:28px 14px;text-align:center;font-size:13px;color:var(--label-tertiary);}
+.draw-tools{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0;}
+.draw-tools button,.draw-tools label{border:1px solid var(--separator-strong);background:var(--bg-elevated);color:var(--label);border-radius:var(--r-pill);padding:7px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;}
+.draw-check{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--label-secondary);margin:4px 0 12px;}
 @media (prefers-reduced-motion: reduce){ .sheet,.sheet-backdrop{transition:none;} }
 </style>
 </head>
@@ -2179,9 +2207,9 @@ body.sheet-open{overflow:hidden;}
 <div class="sheet" id="size-sheet" role="dialog" aria-modal="true" aria-labelledby="sz-title">
   <div class="sheet-grip"></div>
   <div class="sheet-head"><div class="sheet-title" id="sz-title">寸法を書いて頼む</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
-  <div style="display:flex;gap:12px;align-items:center"><div id="sz-photo"></div><div><div class="cs-name" id="sz-name" style="font-size:15px;font-weight:700"></div><div class="sz-hint">単価は手配のときに決まります（合計には入りません）</div></div></div>
+  <div style="display:flex;gap:12px;align-items:center"><div id="sz-photo"></div><div><div class="cs-name" id="sz-name" style="font-size:15px;font-weight:700"></div><div class="sz-hint" id="sz-hint">単価は手配のときに決まります（合計には入りません）</div></div></div>
   <div class="sz-grid">
-    <div class="sz-field"><label for="sz-t">厚み（mm）</label><input id="sz-t" oninput="document.getElementById('sz-err').textContent=''" inputmode="decimal" placeholder="例 20"></div>
+    <div class="sz-field" id="sz-t-field"><label for="sz-t">厚み（mm）</label><input id="sz-t" oninput="document.getElementById('sz-err').textContent=''" inputmode="decimal" placeholder="例 20"></div>
     <div class="sz-field"><label for="sz-q">枚数</label><input id="sz-q" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" value="1"></div>
     <div class="sz-field"><label for="sz-w">幅（mm）</label><input id="sz-w" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" placeholder="例 250"></div>
     <div class="sz-field"><label for="sz-l">長さ（mm）</label><input id="sz-l" oninput="document.getElementById('sz-err').textContent=''" inputmode="numeric" placeholder="例 1820"></div>
@@ -2190,12 +2218,50 @@ body.sheet-open{overflow:hidden;}
   <div class="sz-err" id="sz-err" role="alert"></div>
   <button class="btn btn-primary btn-block" onclick="addSizedToCart()">かごに入れる</button>
 </div>
+<div class="sheet" id="confirm-sheet" role="dialog" aria-modal="true" aria-labelledby="cf2-title">
+  <div class="sheet-grip"></div>
+  <div class="sheet-title" id="cf2-title" style="margin-bottom:8px"></div>
+  <p id="cf2-msg" style="margin:0 0 16px;font-size:14px;line-height:1.6;color:var(--label-secondary);white-space:pre-line"></p>
+  <div style="display:flex;flex-direction:column;gap:10px">
+    <button class="btn btn-block btn-danger-line" id="cf2-ok" style="height:50px"></button>
+    <button class="btn btn-secondary btn-block" style="height:50px" onclick="closeSheets()">やめる</button>
+  </div>
+</div>
+<div class="sheet" id="rules-sheet" role="dialog" aria-modal="true" aria-labelledby="rl-title">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><div class="sheet-title" id="rl-title">マンションの決まり</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
+  <div class="sz-hint" id="rl-anken"></div>
+  <div class="rl-field"><label for="rl-hours">搬入できる時間</label><textarea id="rl-hours" maxlength="300" placeholder="例 平日9時〜17時・土日は不可"></textarea></div>
+  <div class="rl-field"><label for="rl-elevator">エレベーター</label><textarea id="rl-elevator" maxlength="300" placeholder="例 使える・養生が要る・2.4mまで"></textarea></div>
+  <div class="rl-field"><label for="rl-parking">駐車</label><textarea id="rl-parking" maxlength="300" placeholder="例 敷地内に1台・30分まで"></textarea></div>
+  <div class="rl-field"><label for="rl-manager">管理人への連絡</label><textarea id="rl-manager" maxlength="300" placeholder="例 前日までに管理人室へ電話"></textarea></div>
+  <div class="rl-field"><label for="rl-other">ほかの注意</label><textarea id="rl-other" maxlength="300" placeholder="例 共用廊下に置かない"></textarea></div>
+  <div class="rl-field"><label for="rl-plan">図面（写真か画像。PDF はスクリーンショットで）</label><input type="file" id="rl-plan" accept="image/*" onchange="pickPlan(this)"></div>
+  <div class="mark-box" id="rl-plan-preview"></div>
+  <div class="sz-err" id="rl-err" role="alert"></div>
+  <button class="btn btn-primary btn-block" id="rl-save" onclick="saveRules()">保存する</button>
+</div>
+<div class="sheet" id="draw-sheet" role="dialog" aria-modal="true" aria-labelledby="dr-title">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head"><div class="sheet-title" id="dr-title">置き場を書く</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
+  <div class="sz-hint">置いてほしい場所に、指で丸や矢印を書いてください</div>
+  <div class="draw-tools">
+    <button onclick="useDrawBase('plan')">図面に書く</button>
+    <label for="dr-photo">写真に書く</label><input type="file" id="dr-photo" accept="image/*" capture="environment" hidden onchange="pickDrawPhoto(this)">
+    <button onclick="undoStroke()">1つ戻す</button>
+    <button onclick="clearStrokes()">全部消す</button>
+  </div>
+  <div class="draw-wrap" id="draw-wrap"><div class="draw-empty">図面がまだありません。「写真に書く」で現場の写真を撮るか、マンションの決まりの画面で図面を登録してください</div></div>
+  <label class="draw-check"><input type="checkbox" id="dr-default"> 次からもこの置き場を使う（この現場のいつもの置き場にする）</label>
+  <div class="sz-err" id="dr-err" role="alert"></div>
+  <button class="btn btn-primary btn-block" onclick="saveDrawing()">この置き場で頼む</button>
+</div>
 <div class="sheet" id="cart-sheet" role="dialog" aria-modal="true" aria-labelledby="cs-title">
   <div class="sheet-grip"></div>
   <div class="sheet-head"><div class="sheet-title" id="cs-title">かごの中</div><button class="sheet-close" onclick="closeSheets()">閉じる</button></div>
   <div class="cs-list" id="cs-list"></div>
   <div class="cs-total"><span>合計</span><b id="cs-total"></b></div>
-  <button class="btn btn-primary btn-block" id="cs-next" onclick="closeSheets();go('sc-delivery')">配送条件へ</button>
+  <button class="btn btn-primary btn-block" id="cs-next" onclick="closeSheets();cartNext()">配送条件へ</button>
 </div>
 
 <!-- ============================================================
@@ -2419,6 +2485,8 @@ body.sheet-open{overflow:hidden;}
     <div class="step-item"><span class="step-dot">3</span>確認</div>
   </div>
 
+  <div class="addon-banner" id="addon-banner" hidden></div>
+
   <div class="search-row">
     <input type="text" class="input input-search" id="cart-search" placeholder="品名・サイズで検索（例：3×6 9.5mm）" oninput="filterProducts()">
   </div>
@@ -2442,7 +2510,7 @@ body.sheet-open{overflow:hidden;}
         <div class="cart-bar-total tabular" id="cart-total"><span class="yen">¥</span>0</div>
       </div>
       <div class="cart-bar-btn">
-        <button class="btn btn-primary" id="cart-next-btn" onclick="go('sc-delivery')" disabled="">
+        <button class="btn btn-primary" id="cart-next-btn" onclick="cartNext()" disabled="">
           配送条件へ
           <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M13 5l7 7-7 7"></path></svg>
         </button>
@@ -2585,7 +2653,7 @@ body.sheet-open{overflow:hidden;}
      ============================================================ -->
 <div class="screen" id="sc-confirm">
   <div class="nav">
-    <button class="nav-back" onclick="go('sc-delivery')" aria-label="戻る">
+    <button class="nav-back" onclick="confirmBack()" aria-label="戻る">
       <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m15 18-6-6 6-6"></path></svg>
     </button>
     <div class="nav-title">注文内容の確認</div>
@@ -2618,6 +2686,17 @@ body.sheet-open{overflow:hidden;}
       <div class="gl gl-readonly" id="conf-delivery-info"></div>
     </div>
 
+    <!-- 材木店への伝言（v2.6）：マンションの決まり・置き場・この注文の注意 -->
+    <div class="dl-section" id="conf-site-section">
+      <div class="dl-section-head">材木店への伝言</div>
+      <div class="site-box" id="conf-site-rules"><div class="site-empty">読み込み中…</div></div>
+      <button class="dl-add-site" onclick="openRulesSheet()">マンションの決まりを書く・直す</button>
+      <div class="mark-box" id="conf-mark-box"></div>
+      <button class="dl-add-site" onclick="openDrawSheet()">置き場を書く（図面か写真に印）</button>
+      <div class="rl-field"><label for="conf-note">この注文の配送の注意（なくてよい）</label>
+        <textarea class="conf-note" id="conf-note" maxlength="300" placeholder="例 長い物は階段で上げる／エントランス前に停めない" oninput="delivery.note=this.value"></textarea></div>
+    </div>
+
     <!-- Payment amount -->
     <div class="dl-section">
       <div class="cf-pay-card">
@@ -2629,7 +2708,7 @@ body.sheet-open{overflow:hidden;}
           <span class="cf-pay-row-val tabular" id="conf-subtotal">¥0</span>
         </div>
         <div class="cf-pay-row" id="conf-later-row" style="display:none;">
-          <span class="cf-pay-row-label">寸法指定の品</span>
+          <span class="cf-pay-row-label">寸法指定・カットの品</span>
           <span class="cf-pay-row-val cf-pay-row-quote">手配のときに単価が決まります</span>
         </div>
         <div class="cf-pay-row" id="conf-hoist-row" style="display:none;">
@@ -2820,9 +2899,7 @@ body.sheet-open{overflow:hidden;}
     <div style="height:24px;"></div>
   </div>
 
-  <div class="bottom-bar" id="od-bottom-bar">
-    <button class="btn btn-secondary btn-block" onclick="reorderFromDetail(event)" style="height:54px;font-size:16px;">この内容で再注文</button>
-  </div>
+  <div class="bottom-bar" id="od-bottom-bar"></div>
 </div>
 
 <div class="screen" id="sc-track">
@@ -3395,6 +3472,8 @@ function refreshAll(){ loadMonthlySummary(); showToast('更新しました', tru
    Cart flow
    ----------------------------------------------------------- */
 function startOrder() {
+  addOnParent = null; renderAddOnBanner();
+  drawState = { img: null, strokes: [], cur: null };
   cart = {};
   delivery = { siteId:"", anken:"", site:"", address:"", contact:"", phone:"", siteTime:"", date:"", time:"午前8時〜午前10時", hoist:"no" };
   buildCatTabs();
@@ -3480,6 +3559,7 @@ function renderProducts(){
         '<div class="pcard-body">' +
           '<div class="pcard-name">'+escHtml(product.name)+'</div>' +
           '<div class="pcard-unit">'+escHtml(product.unit||'個')+(isCustom?' <span class="price-tag-cust">特別価格</span>':'')+'</div>' +
+          (product.cut ? '<button class="cut-link" onclick="openCutSheet('+regIdx+')">カットして頼む ›</button>' : '') +
           '<div class="pcard-foot">' +
             (product.custom
               ? '<div class="pcard-price"><span class="price-later">単価は手配時</span></div>' +
@@ -3576,14 +3656,14 @@ function orderThumbsHtml(o, max, cls){
 // --- 商品の詳しい画面 ---
 var openSheet = '';
 function showSheet(id){
-  ['product-sheet', 'cart-sheet', 'size-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.toggle('show', s === id); });
+  ['product-sheet', 'cart-sheet', 'size-sheet', 'confirm-sheet', 'rules-sheet', 'draw-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.toggle('show', s === id); });
   var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.add('show');
   document.body.classList.add('sheet-open');
   openSheet = id;
   var cl = document.querySelector('#' + id + ' .sheet-close'); if (cl) { try { cl.focus({ preventScroll: true }); } catch (e) {} }
 }
 function closeSheets(){
-  ['product-sheet', 'cart-sheet', 'size-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.remove('show'); });
+  ['product-sheet', 'cart-sheet', 'size-sheet', 'confirm-sheet', 'rules-sheet', 'draw-sheet'].forEach(function(s){ var el = document.getElementById(s); if (el) el.classList.remove('show'); });
   var bd = document.getElementById('sheet-backdrop'); if (bd) bd.classList.remove('show');
   document.body.classList.remove('sheet-open');
   openSheet = ''; sheetProduct = null;
@@ -3608,7 +3688,8 @@ function renderProductSheet(){
     document.getElementById('ps-qty').innerHTML = '<button class="size-btn" onclick="openSizeSheetFor(sheetProduct)">寸法を書く</button>';
   } else {
     document.getElementById('ps-price').innerHTML = '<span class="yen">¥</span>' + Number(price || 0).toLocaleString();
-    document.getElementById('ps-qty').innerHTML = renderQtyControl(p.name, price, qty);
+    document.getElementById('ps-qty').innerHTML = renderQtyControl(p.name, price, qty) +
+      (p.cut ? '<button class="size-btn" style="margin-left:8px" onclick="openCutSheetFor(sheetProduct)">カットして頼む</button>' : '');
   }
   var note = [];
   if (p.photoNote && /^画像提供/.test(p.photoNote)) note.push(p.photoNote);
@@ -3620,10 +3701,19 @@ function renderProductSheet(){
 // 品名の書き方はサーバー（_kc_customName）と同じ：「元の品名 厚20 幅250×長1820（メモ）」
 var SIZE_LIMITS = { t: [1, 100], w: [10, 1220], l: [10, 4000] };
 function customName(base, z){ return base + ' 厚' + z.t + ' 幅' + z.w + '×長' + z.l + (z.memo ? '（' + z.memo + '）' : ''); }
+function cutName(base, z){ return base + ' カット 幅' + z.w + '×長' + z.l + (z.memo ? '（' + z.memo + '）' : ''); }
 function parseCustomName(name){
-  var m = String(name || '').match(/^(.+) 厚(\d{1,3}(?:\.\d)?) 幅(\d{1,4})×長(\d{1,4})(?:（([^（）]*)）)?$/);
-  return m ? { base: m[1], t: m[2], w: m[3], l: m[4], memo: m[5] || '' } : null;
+  var n = String(name || '');
+  var m = n.match(/^(.+) 厚(\d{1,3}(?:\.\d)?) 幅(\d{1,4})×長(\d{1,4})(?:（([^（）]*)）)?$/);
+  if (m) return { kind: 'size', base: m[1], t: m[2], w: m[3], l: m[4], memo: m[5] || '' };
+  m = n.match(/^(.+) カット 幅(\d{1,4})×長(\d{1,4})(?:（([^（）]*)）)?$/);
+  return m ? { kind: 'cut', base: m[1], w: m[2], l: m[3], memo: m[4] || '' } : null;
 }
+function normCut(w, l, memo){
+  var z = normSize('1', w, l, memo);
+  return z ? { w: z.w, l: z.l, memo: z.memo } : null;
+}
+function laterLabel(c){ return (c && c.kind === 'cut') ? 'カット' : '寸法指定'; }
 // 単価が手配のときに決まる行（注文履歴では 0円で記録されている）
 function isLaterPriced(p){ return !!p && !(Number(p.price) > 0) && !!parseCustomName(p.name); }
 function cartHasCustom(){ return Object.keys(cart).some(function(k){ return cart[k] && cart[k].custom; }); }
@@ -3638,8 +3728,19 @@ function normSize(t, w, l, memo){
 }
 var sizeProduct = null;
 function openSizeSheet(idx){ var p = PRODUCT_REG[idx]; if (p) openSizeSheetFor(p); }
-function openSizeSheetFor(p){
+var sizeMode = 'size';
+function openCutSheet(idx){ var p = PRODUCT_REG[idx]; if (p) openCutSheetFor(p); }
+function openCutSheetFor(p){ openSizeSheetFor(p, 'cut'); }
+function openSizeSheetFor(p, mode){
   sizeProduct = p;
+  sizeMode = mode === 'cut' ? 'cut' : 'size';
+  var cutMode = sizeMode === 'cut';
+  document.getElementById('sz-title').textContent = cutMode ? 'カットして頼む' : '寸法を書いて頼む';
+  document.getElementById('sz-t-field').hidden = cutMode;
+  document.getElementById('sz-hint').textContent = cutMode
+    ? '材木店で寸法どおりに切って届けます。単価（カット代込み）は手配のときに決まります。溝・小口テープはメモに（ザグリ・穴あけ・墨出しはできません）'
+    : '単価は手配のときに決まります（合計には入りません）';
+  document.getElementById('sz-m').placeholder = cutMode ? '例 溝1本 深さ5mm' : '例 枕棚';
   document.getElementById('sz-photo').innerHTML = photoHtml(p.name, p.image, 'ph-md');
   document.getElementById('sz-name').textContent = p.name;
   ['sz-t', 'sz-w', 'sz-l', 'sz-m'].forEach(function(id){ document.getElementById(id).value = ''; });
@@ -3650,16 +3751,244 @@ function openSizeSheetFor(p){
 function addSizedToCart(){
   var p = sizeProduct; if (!p) return;
   var err = document.getElementById('sz-err');
-  var z = normSize(document.getElementById('sz-t').value, document.getElementById('sz-w').value, document.getElementById('sz-l').value, document.getElementById('sz-m').value);
-  if (!z) { err.textContent = '厚み（1〜100）・幅（10〜1220）・長さ（10〜4000）を mm の数字で書いてください'; return; }
+  var cutMode = sizeMode === 'cut';
+  var z = cutMode
+    ? normCut(document.getElementById('sz-w').value, document.getElementById('sz-l').value, document.getElementById('sz-m').value)
+    : normSize(document.getElementById('sz-t').value, document.getElementById('sz-w').value, document.getElementById('sz-l').value, document.getElementById('sz-m').value);
+  if (!z) { err.textContent = cutMode ? '幅（10〜1220）・長さ（10〜4000）を mm の数字で書いてください' : '厚み（1〜100）・幅（10〜1220）・長さ（10〜4000）を mm の数字で書いてください'; return; }
   var q = toHalfNum(document.getElementById('sz-q').value);
   if (!/^\d{1,4}$/.test(q) || Number(q) < 1) { err.textContent = '枚数を1以上の数字で書いてください'; return; }
-  var key = customName(p.name, z);
+  var key = cutMode ? cutName(p.name, z) : customName(p.name, z);
   if (cart[key]) cart[key].qty += Number(q);
-  else cart[key] = { price: 0, qty: Number(q), custom: { sku: p.sku || '', base: p.name, t: z.t, w: z.w, l: z.l, memo: z.memo } };
+  else cart[key] = { price: 0, qty: Number(q), custom: cutMode
+    ? { kind: 'cut', sku: p.sku || '', base: p.name, w: z.w, l: z.l, memo: z.memo }
+    : { kind: 'size', sku: p.sku || '', base: p.name, t: z.t, w: z.w, l: z.l, memo: z.memo } };
   updateCartBar();
   closeSheets();
   showToast('かごに入れました：' + key + ' ×' + q, true);
+}
+
+// --- 同じ便に追加・取り消し（v2.5）：「手配中」かつ届け日が今日から2日後以降 ---
+var addOnParent = null;
+function isChangeable(key){
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(key || ''))) return false;
+  var t = new Date(); t.setHours(0,0,0,0);
+  return String(key) >= dateKey(new Date(t.getTime() + 2*86400000));
+}
+function renderAddOnBanner(){
+  var el = document.getElementById('addon-banner'); if (!el) return;
+  if (!addOnParent) { el.hidden = true; el.innerHTML = ''; return; }
+  var o = addOnParent;
+  el.hidden = false;
+  el.innerHTML = '<span><b>同じ便に追加</b>：' + escHtml(o.site || '') + '　' + escHtml(fmtDateLabel(o.etaKey || o.deliveryDate) || '') + ' ' + escHtml(o.timeWindow || '') +
+    '<br>（元の注文 ' + escHtml(o.id) + '）</span><button onclick="startOrder()">やめる</button>';
+}
+function startAddOn(id){
+  var o = (Array.isArray(HISTORY_DATA) ? HISTORY_DATA : []).find(function(r){ return r.id === id; });
+  if (!o) { showToast('注文が見つかりません', false); return; }
+  if (o.status !== 'pending' || !isChangeable(o.etaKey || o.deliveryDate)) { showToast('追加は今野さんに連絡してください', false); return; }
+  startOrder();
+  var rootId = o.parentOrderId || o.id;
+  var root = (Array.isArray(HISTORY_DATA) ? HISTORY_DATA : []).find(function(r){ return r.id === rootId; });
+  addOnParent = Object.assign({}, root || o, { id: rootId });
+  delivery = { siteId: '', anken: o.ankenCode || '', site: o.site || '', address: o.address || '', contact: '', phone: '', siteTime: '',
+    date: o.etaKey || o.deliveryDate || '', time: o.timeWindow || o.deliveryTime || '', hoist: o.hoist ? 'yes' : 'no' };
+  renderAddOnBanner();
+  updateCartBar();
+  showToast('同じ便に追加する品を選んでください', true);
+}
+function cartNext(){
+  if (addOnParent) { renderConfirmScreen(); go('sc-confirm'); return; }
+  go('sc-delivery');
+}
+function confirmBack(){ go(addOnParent ? 'sc-cart' : 'sc-delivery'); }
+function askCancel(id){
+  var o = (Array.isArray(HISTORY_DATA) ? HISTORY_DATA : []).find(function(r){ return r.id === id; });
+  if (!o) return;
+  document.getElementById('cf2-title').textContent = 'この注文を取り消しますか？';
+  var adds = HISTORY_DATA.filter(function(r){ return r.parentOrderId === id && r.status !== 'cancel'; }).map(function(r){ return r.id; });
+  document.getElementById('cf2-msg').textContent = o.id + '（' + (o.site || '') + '・' + (fmtDateLabel(o.etaKey || o.deliveryDate) || '') + '）を取り消します。取り消したあとは元に戻せません。' +
+    (adds.length ? '\nこの便の追加分（' + adds.join('、') + '）は残ります。追加分も止めるときは、それぞれ取り消してください。' : '');
+  var ok = document.getElementById('cf2-ok');
+  ok.textContent = '取り消す';
+  ok.onclick = function(){ closeSheets(); doCancel(id); };
+  showSheet('confirm-sheet');
+}
+function doCancel(id){
+  if (!hasIdentity()) { showToast('LINE または LINE WORKS のアプリから開いてください', false); return; }
+  showLoading(true);
+  gasPost(Object.assign({ action: 'customerCancel', orderId: id }, authPayload()))
+    .then(function(r){
+      showLoading(false);
+      if (!r || !r.ok) { showToast(ORDER_ERROR_MESSAGES[r && r.error] || '取り消せませんでした。今野さんに連絡してください', false); return; }
+      var o = HISTORY_DATA.find(function(x){ return x.id === id; });
+      if (o) o.status = 'cancel';
+      persistHistory();
+      if (odCurrentId === id) renderOrderDetail(id);
+      renderHistory();
+      showToast('取り消しました', true);
+    })
+    .catch(function(){ showLoading(false); showToast('通信できませんでした。電波の良い所でもう一度お試しください', false); });
+}
+
+// --- 材木店への伝言（v2.6）：マンションの決まり・置き場の図・この注文の注意 ---
+var SITE_INFO = {};    // 案件番号 → { rules, plan, mark, exists }（画面を開いている間だけ覚える）
+var RULE_LABELS = [['hours', '搬入できる時間'], ['elevator', 'エレベーター'], ['parking', '駐車'], ['manager', '管理人への連絡'], ['other', 'ほかの注意']];
+function loadSiteInfo(anken){
+  if (!anken || !hasIdentity()) return;
+  SITE_INFO[anken] = SITE_INFO[anken] || { loading: true, rules: {} };
+  gasPost(Object.assign({ action: 'getSiteInfo', ankenCode: anken }, authPayload()))
+    .then(function(r){
+      if (r && r.ok) SITE_INFO[anken] = { rules: r.rules || {}, plan: r.plan || '', mark: r.mark || '', exists: !!r.exists };
+      else SITE_INFO[anken] = { rules: {}, plan: '', mark: '', exists: false, error: true };
+      renderConfSite();
+    })
+    .catch(function(){ SITE_INFO[anken] = { rules: {}, plan: '', mark: '', exists: false, error: true }; renderConfSite(); });
+}
+function renderConfSite(){
+  var box = document.getElementById('conf-site-rules'); if (!box) return;
+  var info = SITE_INFO[delivery.anken] || {};
+  if (!delivery.anken) box.innerHTML = '<div class="site-empty">現場に案件番号がないので、決まりは書けません</div>';
+  else if (info.loading) box.innerHTML = '<div class="site-empty">読み込み中…</div>';
+  else {
+    var rows = RULE_LABELS.filter(function(x){ return info.rules && info.rules[x[0]]; });
+    box.innerHTML = rows.length
+      ? rows.map(function(x){ return '<div class="site-rule"><span class="k">' + x[1] + '</span><span class="v">' + escHtml(info.rules[x[0]]) + '</span></div>'; }).join('')
+      : '<div class="site-empty">' + (info.error ? '読み込めませんでした。電波の良い所で開き直してください' : 'この現場のマンションの決まりはまだ書かれていません') + '</div>';
+  }
+  var mb = document.getElementById('conf-mark-box'); if (!mb) return;
+  var src = delivery.mark || info.mark || info.plan || '';
+  var cap = delivery.mark ? 'この注文の置き場' : (info.mark ? 'この現場のいつもの置き場' : (info.plan ? '図面（置き場はまだ書かれていません）' : ''));
+  mb.innerHTML = src ? '<img src="' + src + '" alt="置き場の図"><div class="mark-cap">' + cap + '</div>' : '';
+}
+// 画像を長い辺 max px の JPEG にする（大きな写真をそのまま送らない）
+function resizeImage(file, max, cb){
+  if (!file || !/^image\//.test(file.type)) { cb(null); return; }
+  var rd = new FileReader();
+  rd.onload = function(){
+    var im = new Image();
+    im.onload = function(){
+      var k = Math.min(1, max / Math.max(im.width, im.height));
+      var c = document.createElement('canvas'); c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+      var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(im, 0, 0, c.width, c.height);
+      cb(c.toDataURL('image/jpeg', 0.82));
+    };
+    im.onerror = function(){ cb(null); };
+    im.src = rd.result;
+  };
+  rd.onerror = function(){ cb(null); };
+  rd.readAsDataURL(file);
+}
+var pendingPlan = '';
+function openRulesSheet(){
+  if (!delivery.anken) { showToast('現場に案件番号がありません', false); return; }
+  var info = SITE_INFO[delivery.anken] || { rules: {} };
+  document.getElementById('rl-anken').textContent = delivery.anken + ' ' + (delivery.site || '') + '（ここに書いたことは、この現場で頼む人みんなと材木店に見えます）';
+  RULE_LABELS.forEach(function(x){ document.getElementById('rl-' + x[0]).value = (info.rules && info.rules[x[0]]) || ''; });
+  pendingPlan = '';
+  document.getElementById('rl-plan').value = '';
+  document.getElementById('rl-plan-preview').innerHTML = info.plan ? '<img src="' + info.plan + '" alt="図面"><div class="mark-cap">今の図面</div>' : '';
+  document.getElementById('rl-err').textContent = '';
+  showSheet('rules-sheet');
+}
+function pickPlan(input){
+  resizeImage(input.files && input.files[0], 1600, function(url){
+    if (!url) { document.getElementById('rl-err').textContent = '画像を読み込めませんでした（写真か画像を選んでください）'; return; }
+    pendingPlan = url;
+    document.getElementById('rl-plan-preview').innerHTML = '<img src="' + url + '" alt="新しい図面"><div class="mark-cap">新しい図面（保存すると入れ替わります）</div>';
+  });
+}
+function saveRules(){
+  var anken = delivery.anken; if (!anken) return;
+  var rules = {};
+  RULE_LABELS.forEach(function(x){ rules[x[0]] = document.getElementById('rl-' + x[0]).value; });
+  var btn = document.getElementById('rl-save'); btn.disabled = true;
+  showLoading(true);
+  gasPost(Object.assign({ action: 'saveSiteInfo', ankenCode: anken, site: delivery.site || '', rules: rules, plan: pendingPlan || undefined }, authPayload()))
+    .then(function(r){
+      showLoading(false); btn.disabled = false;
+      if (!r || !r.ok) { document.getElementById('rl-err').textContent = r && r.error === 'bad_image' ? '図面の画像を読み込めませんでした' : '保存できませんでした。電波の良い所でもう一度お試しください'; return; }
+      var info = SITE_INFO[anken] || {};
+      SITE_INFO[anken] = { rules: rules, plan: pendingPlan || info.plan || '', mark: info.mark || '', exists: true };
+      pendingPlan = '';
+      closeSheets(); renderConfSite();
+      showToast('マンションの決まりを保存しました', true);
+    })
+    .catch(function(){ showLoading(false); btn.disabled = false; document.getElementById('rl-err').textContent = '保存できませんでした。電波の良い所でもう一度お試しください'; });
+}
+// 置き場を書く：図面か写真の上に、指で赤い線を書く
+var drawState = { img: null, strokes: [], cur: null };
+function openDrawSheet(){
+  document.getElementById('dr-err').textContent = '';
+  document.getElementById('dr-default').checked = false;
+  showSheet('draw-sheet');
+  var info = SITE_INFO[delivery.anken] || {};
+  if (!drawState.img && info.plan) useDrawBase('plan'); else drawSetup();
+}
+function useDrawBase(kind){
+  var info = SITE_INFO[delivery.anken] || {};
+  if (kind === 'plan' && !info.plan) { document.getElementById('dr-err').textContent = '図面がまだありません。「写真に書く」か、マンションの決まりの画面で図面を登録してください'; return; }
+  loadDrawBase(info.plan);
+}
+function pickDrawPhoto(input){
+  resizeImage(input.files && input.files[0], 1400, function(url){
+    if (!url) { document.getElementById('dr-err').textContent = '写真を読み込めませんでした'; return; }
+    loadDrawBase(url);
+  });
+}
+function loadDrawBase(src){
+  var im = new Image();
+  im.onload = function(){ drawState.img = im; drawState.strokes = []; drawState.anken = delivery.anken; drawSetup(); };
+  im.src = src;
+}
+function drawSetup(){
+  var wrap = document.getElementById('draw-wrap');
+  if (!drawState.img) return;
+  var c = document.getElementById('draw-canvas');
+  if (!c) {
+    wrap.innerHTML = '<canvas id="draw-canvas"></canvas>';
+    c = document.getElementById('draw-canvas');
+    var pos = function(e){ var r = c.getBoundingClientRect(); return [ (e.clientX - r.left) * c.width / r.width, (e.clientY - r.top) * c.height / r.height ]; };
+    c.addEventListener('pointerdown', function(e){ e.preventDefault(); c.setPointerCapture(e.pointerId); drawState.cur = [pos(e)]; drawState.strokes.push(drawState.cur); redrawCanvas(); });
+    c.addEventListener('pointermove', function(e){ if (!drawState.cur) return; e.preventDefault(); drawState.cur.push(pos(e)); redrawCanvas(); });
+    var end = function(){ drawState.cur = null; };
+    c.addEventListener('pointerup', end); c.addEventListener('pointercancel', end);
+  }
+  var im = drawState.img, k = Math.min(1, 1400 / Math.max(im.width, im.height));
+  c.width = Math.round(im.width * k); c.height = Math.round(im.height * k);
+  redrawCanvas();
+}
+function redrawCanvas(){
+  var c = document.getElementById('draw-canvas'); if (!c || !drawState.img) return;
+  var g = c.getContext('2d');
+  g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+  g.drawImage(drawState.img, 0, 0, c.width, c.height);
+  g.strokeStyle = '#E53935'; g.lineWidth = Math.max(4, c.width / 110); g.lineCap = 'round'; g.lineJoin = 'round';
+  drawState.strokes.forEach(function(st){
+    if (!st.length) return;
+    g.beginPath(); g.moveTo(st[0][0], st[0][1]);
+    if (st.length === 1) g.lineTo(st[0][0] + 0.1, st[0][1] + 0.1);
+    for (var i = 1; i < st.length; i++) g.lineTo(st[i][0], st[i][1]);
+    g.stroke();
+  });
+}
+function undoStroke(){ drawState.strokes.pop(); redrawCanvas(); }
+function clearStrokes(){ drawState.strokes = []; redrawCanvas(); }
+function saveDrawing(){
+  var c = document.getElementById('draw-canvas');
+  if (!c || !drawState.img) { document.getElementById('dr-err').textContent = '図面か写真を選んでから書いてください'; return; }
+  if (!drawState.strokes.length) { document.getElementById('dr-err').textContent = '置いてほしい場所に印を書いてください'; return; }
+  var url = c.toDataURL('image/jpeg', 0.82);
+  delivery.mark = url;
+  delivery.markAnken = delivery.anken;
+  var anken = delivery.anken;
+  if (document.getElementById('dr-default').checked && anken) {
+    gasPost(Object.assign({ action: 'saveSiteInfo', ankenCode: anken, markDefault: url }, authPayload()))
+      .then(function(r){ if (r && r.ok) { SITE_INFO[anken] = Object.assign({}, SITE_INFO[anken] || {}, { mark: url }); showToast('いつもの置き場にしました', true); } })
+      .catch(function(){});
+  }
+  closeSheets(); renderConfSite();
+  showToast('置き場をこの注文に付けました', true);
 }
 
 // --- かごの中 ---
@@ -3680,10 +4009,10 @@ function renderCartSheet(){
     var p = findProductByName(n);
     return '<div class="cs-item">' + photoHtml(n, imageForName(n), 'ph-md') +
       '<div class="cs-body"><div class="cs-name">' + escHtml(n) + '</div>' +
-      '<div class="cs-meta">' + (cart[n].custom ? '寸法指定・単価は手配のときに' : escHtml((p && p.unit) || '') + '　@¥' + cart[n].price.toLocaleString() + '　小計 ¥' + line.toLocaleString()) + '</div></div>' +
+      '<div class="cs-meta">' + (cart[n].custom ? laterLabel(cart[n].custom) + '・単価は手配のときに' : escHtml((p && p.unit) || '') + '　@¥' + cart[n].price.toLocaleString() + '　小計 ¥' + line.toLocaleString()) + '</div></div>' +
       '<div class="qty-ctrl">' + renderQtyControl(n, cart[n].price, cart[n].qty) + '</div></div>';
   }).join('');
-  document.getElementById('cs-total').textContent = '¥' + total.toLocaleString() + (cartHasCustom() ? '＋寸法指定の品（手配時）' : '');
+  document.getElementById('cs-total').textContent = '¥' + total.toLocaleString() + (cartHasCustom() ? '＋寸法指定・カットの品（手配時）' : '');
   var title = document.getElementById('cs-title'); if (title) title.textContent = 'かごの中（' + names.length + '品目）';
   var next = document.getElementById('cs-next');
   if (next) { var act = document.querySelector('.screen.active'); next.hidden = !(act && act.id === 'sc-cart'); }
@@ -4135,7 +4464,7 @@ function renderConfirmScreen(){
         '<div class="cf-item-name">'+escHtml(name)+'</div>'+
         '<div class="cf-item-meta">'+
           '<span class="cf-item-qty">×'+cart[name].qty+'</span>'+
-          (cart[name].custom ? '<span>寸法指定</span>' : '<span>@¥'+cart[name].price.toLocaleString()+'</span>')+
+          (cart[name].custom ? '<span>'+laterLabel(cart[name].custom)+'</span>' : '<span>@¥'+cart[name].price.toLocaleString()+'</span>')+
         '</div>'+
       '</div>'+
       (cart[name].custom ? '<div class="cf-item-amt" style="font-size:12px">手配時</div>' : '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div>')+
@@ -4144,11 +4473,18 @@ function renderConfirmScreen(){
   if (items) items.innerHTML = html || '<div class="cf-item"><div class="cf-item-body"><div class="cf-item-name">商品がありません</div></div></div>';
   var lateRow = document.getElementById('conf-later-row');
   if (lateRow) lateRow.style.display = cartHasCustom() ? 'flex' : 'none';
+  if (delivery.mark && delivery.markAnken !== delivery.anken) { delivery.mark = ''; delivery.markAnken = ''; }   // 現場を変えたら前の置き場の図は外す
+  if (drawState.anken && drawState.anken !== delivery.anken) drawState = { img: null, strokes: [], cur: null };
+  var noteEl = document.getElementById('conf-note'); if (noteEl) noteEl.value = delivery.note || '';
+  renderConfSite();
+  if (delivery.anken && !SITE_INFO[delivery.anken]) loadSiteInfo(delivery.anken);
 
   // Delivery info
   var info = document.getElementById('conf-delivery-info');
   var hoistLabel = delivery.hoist === 'yes' ? '階段上げ希望（別途見積）' : '車上渡し';
-  var rows = [
+  var rows = [];
+  if (addOnParent) rows.push({ ic:'box', l:'同じ便に追加', v: '元の注文 ' + addOnParent.id });
+  rows = rows.concat([
     { ic:'site',     l:'案件番号', v: delivery.anken || '—' },
     { ic:'site',     l:'現場',     v: delivery.site || '—' },
     { ic:'pin',      l:'住所',     v: delivery.address || '—' },
@@ -4158,7 +4494,7 @@ function renderConfirmScreen(){
     { ic:'cal',      l:'希望日',   v: fmtDateLabel(delivery.date) },
     { ic:'clock',    l:'時間帯',   v: delivery.time },
     { ic:'box',      l:'荷揚げ',   v: hoistLabel }
-  ];
+  ]);
   if (info) info.innerHTML = rows.map(function(r){
     return '<div class="gl-row">'+
       '<div class="gl-row-icon">'+confIcon(r.ic)+'</div>'+
@@ -4220,7 +4556,8 @@ function savePendingOrder(p){ try { KC_STORE.setItem(PENDING_ORDER_KEY, JSON.str
 function clearPendingOrder(){ try { KC_STORE.removeItem(PENDING_ORDER_KEY); } catch(e){} }
 function orderSignature(items){
   return JSON.stringify({
-    items: items.map(function(i){ return [i.sku || i.name, i.qty, i.spec ? [i.spec.t, i.spec.w, i.spec.l, i.spec.memo || ''].join('/') : '']; }).sort(),
+    items: items.map(function(i){ return [i.sku || i.name, i.qty, i.spec ? [i.spec.kind || '', i.spec.t || '', i.spec.w, i.spec.l, i.spec.memo || ''].join('/') : '']; }).sort(),
+    parent: addOnParent ? addOnParent.id : '',
     anken: delivery.anken, site: delivery.siteId, date: delivery.date, time: delivery.time, hoist: delivery.hoist
   });
 }
@@ -4244,6 +4581,10 @@ var ORDER_ERROR_MESSAGES = {
   unknown_item: '取り扱いが変わった品があります。カートから外してもう一度お試しください',
   bad_qty: '数量を確かめてください',
   bad_size: '寸法を確かめてください（厚み1〜100・幅10〜1220・長さ10〜4000mm）',
+  parent_not_found: '元の注文が見つかりませんでした。注文履歴から開き直してください',
+  parent_locked: '元の注文はもう手配が進んでいます。追加は今野さんに連絡してください',
+  too_late: '届け日の2日前を過ぎたので、今野さんに連絡してください',
+  not_cancellable: 'もう手配が進んでいるので取り消せません。今野さんに連絡してください',
   no_items: '商品が選択されていません',
   bad_delivery_date: '希望日を選び直してください',
   order_id_conflict: 'もう一度お試しください',
@@ -4257,7 +4598,7 @@ function submitOrder(){
   var items = [];
   Object.keys(cart).forEach(function(n){
     var c = cart[n].custom;
-    if (c) items.push({ sku: c.sku, name: c.base, qty: cart[n].qty, spec: { t: c.t, w: c.w, l: c.l, memo: c.memo } });
+    if (c) items.push({ sku: c.sku, name: c.base, qty: cart[n].qty, spec: c.kind === 'cut' ? { kind: 'cut', w: c.w, l: c.l, memo: c.memo } : { t: c.t, w: c.w, l: c.l, memo: c.memo } });
     else items.push({ sku: findSkuByName(n), name: n, qty: cart[n].qty });
   });
   if (!items.length) { showToast('商品が選択されていません', false); return; }
@@ -4311,6 +4652,9 @@ function submitOrder(){
     deliveryDate: delivery.date || '',
     deliveryTime: delivery.time || '',
     hoist: hoistLabel,
+    parentOrderId: addOnParent ? addOnParent.id : '',
+    note: delivery.note || '',
+    mark: delivery.mark || '',
     items: items
   }, authPayload());
 
@@ -4355,6 +4699,7 @@ function onOrderAccepted(r, oid, dl, now){
       date: now.getFullYear()+'/'+pad(now.getMonth()+1)+'/'+pad(now.getDate()),
       site: delivery.site || '—',
       ankenCode: r.ankenCode || delivery.anken || '',
+      parentOrderId: r.parentOrderId || '',
       items: (products[0] ? products[0].name : '注文') + (products.length > 1 ? ' ほか ' + products.length + '品目' : ''),
       amount: subtotal,
       status: 'pending',
@@ -4370,8 +4715,11 @@ function onOrderAccepted(r, oid, dl, now){
     persistHistory();
   }
 
-  // 確定後はカートをクリア
+  // 確定後はカートをクリア（同じ便への追加・置き場の図・この注文の注意も終わり）
   cart = {};
+  delivery.mark = ''; delivery.markAnken = ''; delivery.note = '';
+  drawState = { img: null, strokes: [], cur: null };
+  addOnParent = null; renderAddOnBanner();
   updateCartBar();
 
   // 完了画面の表示
@@ -4486,7 +4834,7 @@ function renderHistory(){
         orderThumbsHtml(r, 3, 'h-thumbs')+
       '</div>'+
       '<div class="h-foot">'+
-        '<span class="h-badge h-badge-'+r.status+'">'+statusLabel(r.status)+'</span>'+
+        '<span><span class="h-badge h-badge-'+r.status+'">'+statusLabel(r.status)+'</span>'+(r.parentOrderId ? '<span class="h-badge h-badge-add">追加</span>' : '')+'</span>'+
         reorder+
       '</div>'+
     '</div>';
@@ -4502,6 +4850,8 @@ function toggleHistoryFilter(el){
 function refreshHistory(){ renderHistory(); showToast('更新しました', true); }
 function reorderFromHistory(id, ev){
   if (ev){ ev.stopPropagation(); }
+  if (addOnParent) { addOnParent = null; renderAddOnBanner(); }
+  delivery.mark = ''; delivery.markAnken = ''; delivery.note = '';
   var record = HISTORY_DATA.find(function(r){ return r.id === id; });
   if (!record || !record.products || !record.products.length){
     showToast('再注文できる商品データがありません', false);
@@ -4515,7 +4865,7 @@ function reorderFromHistory(id, ev){
     } else {
       var cs = isLaterPriced(p) ? parseCustomName(p.name) : null;
       var base = cs ? findProductByName(cs.base) : null;
-      if (cs && base && base.custom) cart[p.name] = { price: 0, qty: p.qty, custom: { sku: base.sku || '', base: cs.base, t: cs.t, w: cs.w, l: cs.l, memo: cs.memo } };
+      if (cs && base && (cs.kind === 'cut' ? base.cut : base.custom)) cart[p.name] = { price: 0, qty: p.qty, custom: { kind: cs.kind, sku: base.sku || '', base: cs.base, t: cs.t, w: cs.w, l: cs.l, memo: cs.memo } };
       else cart[p.name] = { price: p.price, qty: p.qty };
     }
     added += p.qty;
@@ -4554,7 +4904,7 @@ function renderOrderDetail(id){
     var line = (p.price||0) * (p.qty||0);
     html += '<div class="cf-item">'+photoHtml(p.name, imageForName(p.name), 'ph-md')+
       '<div class="cf-item-body"><div class="cf-item-name">'+escHtml(p.name)+'</div>'+
-      '<div class="cf-item-meta"><span class="cf-item-qty">×'+(p.qty||0)+'</span>'+(isLaterPriced(p) ? '<span>寸法指定</span>' : '<span>@¥'+(p.price||0).toLocaleString()+'</span>')+'</div></div>'+
+      '<div class="cf-item-meta"><span class="cf-item-qty">×'+(p.qty||0)+'</span>'+(isLaterPriced(p) ? '<span>'+laterLabel(parseCustomName(p.name))+'</span>' : '<span>@¥'+(p.price||0).toLocaleString()+'</span>')+'</div></div>'+
       (isLaterPriced(p) ? '<div class="cf-item-amt" style="font-size:12px">手配時</div>' : '<div class="cf-item-amt"><span class="yen">¥</span>'+line.toLocaleString()+'</div>')+'</div>';
   });
   var itemsEl = document.getElementById('od-items-list');
@@ -4575,7 +4925,22 @@ function renderOrderDetail(id){
   // Total
   var tot = document.getElementById('od-total'); if (tot) tot.innerHTML = '<span class="yen">¥</span>'+(o.amount||0).toLocaleString();
   // 再注文は納品完了(done)の注文のみ表示＝現役注文(pending/shipping)の重複発注を防ぐ
-  var bb = document.getElementById('od-bottom-bar'); if (bb) bb.style.display = (o.status === 'done') ? 'block' : 'none';
+  var bb = document.getElementById('od-bottom-bar');
+  if (bb) {
+    var dkey = o.etaKey || o.deliveryDate || '';
+    if (o.status === 'done') {
+      bb.innerHTML = '<button class="btn btn-secondary btn-block" onclick="reorderFromDetail(event)" style="height:54px;font-size:16px;">この内容で再注文</button>';
+    } else if (o.status === 'pending' && isChangeable(dkey)) {
+      bb.innerHTML = '<div class="od-actions"><button class="btn btn-primary" onclick="startAddOn(odCurrentId)">この便に追加</button>' +
+        '<button class="btn btn-danger-line" onclick="askCancel(odCurrentId)">取り消す</button></div>' +
+        '<div class="od-note" style="margin-top:8px">追加・取り消しは届け日の2日前まで</div>';
+    } else if (o.status === 'pending') {
+      bb.innerHTML = '<div class="od-note">届け日の2日前を過ぎたので、追加・取り消しは今野さんに連絡してください</div>';
+    } else {
+      bb.innerHTML = '';
+    }
+    bb.style.display = bb.innerHTML ? 'block' : 'none';
+  }
   return true;
 }
 function openHistoryDetail(id){
