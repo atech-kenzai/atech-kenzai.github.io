@@ -3166,10 +3166,68 @@ var WOFF_ID = "d0fSIuZSVj6LwveSt60GyA";
 var WOFF_SDK_URL = "https://static.worksmobile.net/static/wm/woff/edge/3.7.4/sdk.js";
 var lwAccessToken = '';   // LINE WORKS のトークンはメモリにだけ置く（端末・URL・画面には出さない）
 var lwProfile = null;
+// LINE の ID トークン（v2.7）。GAS が LINE に確かめて「誰が」を決める。発行から1時間で切れる。メモリにだけ置く
+var lineIdToken = '';
 
-// GAS に「誰が」を伝える項目。LINE WORKS はトークン（GAS が確かめる）、LINE は LINE の userId
+// GAS に「誰が」を伝える項目。LINE WORKS はトークン、LINE は ID トークン（どちらも GAS が確かめる）。
+// lineUid は v2.6 までの受注処理（ID トークンを読まない）向けに当面いっしょに送る（v2.7 の受注処理はトークンがあれば使わない）
 function authPayload(){
-  return KC_PLATFORM === 'lw' ? { lwToken: lwAccessToken } : { lineUid: KC_STORE.getItem('kenzai_line_uid') || '' };
+  if (KC_PLATFORM === 'lw') return { lwToken: lwAccessToken };
+  var p = { lineUid: KC_STORE.getItem('kenzai_line_uid') || '' };
+  if (lineIdToken) p.lineIdToken = lineIdToken;
+  return p;
+}
+
+/* --- LINE の ID トークンが切れたとき（v2.7）：LINE の確認をし直して開き直す。かごの中身・届け先は持ち越す --- */
+var LINE_REFRESH_KEY = 'kc_line_refresh_at';   // し直した時刻（5分以内に2回はしない＝繰り返し防止）
+var LINE_RESUME_KEY = 'kc_line_resume';        // 持ち越す中身（このタブの間だけ）
+// 手元の時計で切れている（または1分以内に切れる）か。時計が狂っていても、し直しは5分に1回まで
+function lineTokenStale(){
+  try { var d = liff.getDecodedIDToken(); return !!(d && d.exp && d.exp * 1000 < Date.now() + 60000); } catch(e) { return false; }
+}
+// し直しを始めたら true（このあとページが開き直る）。できない・したばかりなら false
+function refreshLineLogin(reason){
+  if (KC_PLATFORM === 'lw' || !liffReady || typeof liff === 'undefined') return false;
+  try {
+    var last = Number(sessionStorage.getItem(LINE_REFRESH_KEY) || 0);
+    if (Date.now() - last < 5 * 60000) return false;
+    sessionStorage.setItem(LINE_REFRESH_KEY, String(Date.now()));
+  } catch(e) { return false; }   // 覚えられない環境では繰り返しを止められないので、し直さない
+  if (reason !== 'startup') saveResume();
+  var inClient = false;
+  try { inClient = liff.isInClient(); } catch(e) {}
+  try { liff.logout(); } catch(e) {}
+  // LINE の中：開き直すと liff.init が自動でログインし直す（liff.login は LINE の中では使えない）／外のブラウザ：ログインし直す
+  if (inClient) location.reload();
+  else liff.login({ redirectUri: location.origin + location.pathname });
+  return true;
+}
+function saveResume(){
+  try {
+    if (!Object.keys(cart).length) return;
+    var act = document.querySelector('.screen.active');
+    var snap = { cart: cart, delivery: delivery, addOnParent: addOnParent, screen: act ? act.id : '', ts: Date.now(), uid: identityKey() };
+    try { sessionStorage.setItem(LINE_RESUME_KEY, JSON.stringify(snap)); }
+    catch(e) {
+      // 置き場の図が大きくて入らない → 図だけ外して持ち越す
+      snap.delivery = Object.assign({}, delivery, { mark: '', markAnken: '' });
+      snap.markDropped = !!delivery.mark;
+      sessionStorage.setItem(LINE_RESUME_KEY, JSON.stringify(snap));
+    }
+  } catch(e) {}
+}
+// 開き直したあと、持ち越した中身を戻す（30分以内・同じ人のときだけ）
+function restoreResume(){
+  var snap = null;
+  try { snap = JSON.parse(sessionStorage.getItem(LINE_RESUME_KEY) || 'null'); sessionStorage.removeItem(LINE_RESUME_KEY); } catch(e) { return; }
+  if (!snap || !snap.cart || typeof snap.cart !== 'object' || Date.now() - Number(snap.ts || 0) > 30 * 60000) return;
+  if (!snap.uid || snap.uid !== identityKey()) return;
+  cart = snap.cart;
+  delivery = Object.assign({}, delivery, snap.delivery || {});
+  addOnParent = snap.addOnParent || null;
+  renderAddOnBanner(); updateCartBar();
+  go(/^sc-(cart|delivery|confirm)$/.test(snap.screen) ? snap.screen : 'sc-cart');
+  showToast(snap.markDropped ? 'LINE の確認をし直しました。置き場の図はもう一度書いてください' : 'LINE の確認をし直しました。続きからどうぞ', true);
 }
 function hasIdentity(){ return KC_PLATFORM === 'lw' ? !!lwAccessToken : !!KC_STORE.getItem('kenzai_line_uid'); }
 function identityKey(){ return KC_PLATFORM === 'lw' ? ('lw:' + ((lwProfile && lwProfile.userId) || '')) : (KC_STORE.getItem('kenzai_line_uid') || ''); }
@@ -3231,6 +3289,12 @@ window.addEventListener('load', function() {
       .then(function() {
         liffReady = true;
         if (liff.isLoggedIn()) {
+          // ID トークン（v2.7）。取れないのは LIFF アプリの scope に openid が無いとき（受注処理が古い画面として扱う）
+          lineIdToken = '';
+          try { lineIdToken = liff.getIDToken() || ''; } catch(e) {}
+          if (!lineIdToken) console.warn('[LIFF] ID トークンが取れません（LIFF アプリの scope に openid が無い？）');
+          // 外のブラウザでは前回の古いトークンが残っていることがある → 開いた時点で切れていれば、し直す
+          else if (lineTokenStale() && refreshLineLogin('startup')) return;
           // LINE プロフィール取得 → 利用者の登録・承認を確かめてからホームへ（v2.0）
           liff.getProfile()
             .then(function(profile) {
@@ -3281,6 +3345,11 @@ function gasPost(payload){
   }).then(function(res){
     if (!res.ok) throw new Error('HTTP ' + res.status);
     return res.json();
+  }).then(function(j){
+    // LINE の ID トークンが切れていた（開いたまま1時間たった等）→ LINE の確認をし直して開き直す。
+    // ページが開き直るので、この呼び出しの結果は返さない（し直せないときは、そのまま返して呼び出し側が知らせる）
+    if (j && j.ok === false && j.error === 'line_token_expired' && refreshLineLogin('expired')) return new Promise(function(){});
+    return j;
   });
 }
 function gasGet(params){
@@ -3320,8 +3389,8 @@ function checkMembership(){
   gasPost(Object.assign({ action: 'getMe' }, authPayload()))
     .then(function(me){
       showLoading(false);
-      if (me && !me.ok && /^lw_(auth_failed|not_configured)$/.test(me.error || '')) {
-        showStartError('本人を確かめられませんでした', 'LINE WORKS のアプリから開き直してください。続くときは a-tech の担当者に知らせてください。');
+      if (me && !me.ok && /^(lw_(auth_failed|not_configured)|line_(auth_failed|not_configured|token_required|token_expired))$/.test(me.error || '')) {
+        showStartError('本人を確かめられませんでした', (KC_PLATFORM === 'lw' ? 'LINE WORKS' : 'LINE') + ' のアプリから開き直してください。続くときは a-tech の担当者に知らせてください。');
         return;
       }
       if (!me || !me.ok) throw new Error((me && me.error) || 'getMe failed');
@@ -3331,6 +3400,7 @@ function checkMembership(){
       applyMe(me);
       syncHistoryFromServer();
       initHome();
+      restoreResume();   // LINE の確認をし直して開き直したときは、かごの中身・届け先を戻す（v2.7）
     })
     .catch(function(err){
       showLoading(false);
@@ -3907,7 +3977,7 @@ function saveRules(){
   gasPost(Object.assign({ action: 'saveSiteInfo', ankenCode: anken, site: delivery.site || '', rules: rules, plan: pendingPlan || undefined }, authPayload()))
     .then(function(r){
       showLoading(false); btn.disabled = false;
-      if (!r || !r.ok) { document.getElementById('rl-err').textContent = r && r.error === 'bad_image' ? '図面の画像を読み込めませんでした' : '保存できませんでした。電波の良い所でもう一度お試しください'; return; }
+      if (!r || !r.ok) { document.getElementById('rl-err').textContent = r && r.error === 'bad_image' ? '図面の画像を読み込めませんでした' : (authErrorMessage(r) || '保存できませんでした。電波の良い所でもう一度お試しください'); return; }
       var info = SITE_INFO[anken] || {};
       SITE_INFO[anken] = { rules: rules, plan: pendingPlan || info.plan || '', mark: info.mark || '', exists: true };
       pendingPlan = '';
@@ -4590,8 +4660,18 @@ var ORDER_ERROR_MESSAGES = {
   order_id_conflict: 'もう一度お試しください',
   lw_auth_failed: 'LINE WORKS で本人を確かめられませんでした。アプリを開き直してください',
   lw_unavailable: 'LINE WORKS につながりませんでした。少し待ってからもう一度お試しください',
-  lw_not_configured: 'LINE WORKS 版の準備がまだです'
+  lw_not_configured: 'LINE WORKS 版の準備がまだです',
+  line_auth_failed: 'LINE で本人を確かめられませんでした。LINE のアプリから開き直してください',
+  line_token_expired: 'LINE の確認の期限が切れました。LINE のアプリから開き直してください',
+  line_token_required: 'LINE で本人を確かめられませんでした。LINE のアプリから開き直してください',
+  line_unavailable: 'LINE につながりませんでした。少し待ってからもう一度お試しください',
+  line_not_configured: 'LINE の本人確認の準備がまだです。a-tech の担当者に知らせてください'
 };
+// 本人確認のエラー（LINE・LINE WORKS）なら、その知らせの文。それ以外は ''
+function authErrorMessage(r){
+  var code = r && r.error;
+  return (/^(lw|line)_/.test(code || '') && ORDER_ERROR_MESSAGES[code]) || '';
+}
 
 function submitOrder(){
   if (submittingOrder) return;
@@ -5087,7 +5167,7 @@ function markReceived(id, ev){
     .then(function(r){
       showLoading(false);
       if (!r || !r.ok) {
-        showToast(r && /^not shippable/.test(r.error || '') ? 'この注文はまだ「配送中」になっていません' : '受け取りを記録できませんでした。もう一度お試しください', false);
+        showToast(r && /^not shippable/.test(r.error || '') ? 'この注文はまだ「配送中」になっていません' : (authErrorMessage(r) || '受け取りを記録できませんでした。もう一度お試しください'), false);
         return;
       }
       for (var i=0; i<HISTORY_DATA.length; i++){
