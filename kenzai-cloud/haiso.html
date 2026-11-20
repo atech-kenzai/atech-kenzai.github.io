@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'none'">
+<title>配送の案内（a-tech）</title>
+<!--
+  Kenzai Cloud LINE発注 v2.6：材木店に送る「配送の案内」ページ（ログイン不要・鍵つき・単価は出さない）
+  開き方：haiso.html#k=<32文字の鍵>（鍵は # のうしろ＝このページの置き場所のサーバーには届かない。?k= は受け付けない）
+  届け日を7日過ぎた便は「見つかりませんでした」。取り消しの便は取り消しのことだけを出す。
+  中身は受注処理（GAS）の ?action=haiso&k=<鍵> が JSON で返す。ここでは文字を textContent で入れるだけ（タグにしない）。
+  ⚠ 受注処理から HtmlService のページを出さないために、このページは静的な HTML にしている。
+-->
+<style>
+  :root { color-scheme: light; }
+  body { margin: 0; font-family: "Hiragino Sans", "Noto Sans JP", sans-serif; background: #f6f6f3; color: #1a1a1f; line-height: 1.6; }
+  main { max-width: 720px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; margin: 4px 0 2px; }
+  .sub { color: #555; font-size: 13px; }
+  section { background: #fff; border: 1px solid #e3e1da; border-radius: 12px; padding: 14px 16px; margin-top: 12px; }
+  h2 { font-size: 14px; margin: 0 0 8px; color: #1e2a78; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  td { padding: 6px 4px; border-bottom: 1px solid #eee; vertical-align: top; overflow-wrap: anywhere; }
+  td.k { color: #555; width: 8em; white-space: nowrap; }
+  td.q { text-align: right; white-space: nowrap; font-weight: 700; }
+  .big { font-size: 22px; font-weight: 800; }
+  .cancel { background: #fde8e6; color: #b23a2f; border-color: #f1b8b1; font-weight: 800; font-size: 18px; text-align: center; }
+  .note { white-space: pre-wrap; }
+  img { max-width: 100%; border-radius: 8px; border: 1px solid #ddd; display: block; }
+  .tag { font-size: 11px; background: #e6e9f7; color: #1e2a78; border-radius: 4px; padding: 1px 6px; margin-left: 6px; white-space: nowrap; }
+  .msg { background: #fff; border: 1px solid #e3e1da; border-radius: 12px; padding: 18px 16px; margin-top: 12px; }
+  button { font: inherit; font-weight: 700; margin-top: 10px; padding: 10px 16px; border-radius: 10px; border: 1px solid #1e2a78; background: #1e2a78; color: #fff; }
+  a { color: #1e2a78; }
+</style>
+</head>
+<body>
+<main id="main">
+  <div class="sub">a-tech　配送の案内</div>
+  <div class="msg" id="msg">読み込んでいます…</div>
+</main>
+<script>
+(function () {
+  'use strict';
+  // 受注処理（本番の Web アプリ）。画面の index.html の GAS_URL と同じ＝秘密ではない
+  var GAS_URL = 'https://script.google.com/macros/s/AKfycbyven-raoEb3V7PfsjZTHWT5XPYxdAPjvbmOIrldTd-YmKvYIVrFkIGZ27fPqhuCel7/exec';
+  var main = document.getElementById('main');
+
+  function el(tag, cls, text) {
+    var e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text != null) e.textContent = String(text);
+    return e;
+  }
+  function readKey() {
+    var m = (location.hash || '').match(/[#&]k=([0-9a-f]{32})(?:&|$)/);
+    return m ? m[1] : '';
+  }
+  function showMessage(text, retry) {
+    var box = document.getElementById('msg');
+    if (!box) { box = el('div', 'msg'); box.id = 'msg'; main.appendChild(box); }
+    box.textContent = text;
+    if (retry) {
+      var b = el('button', '', '開き直す');
+      b.type = 'button';
+      b.addEventListener('click', function () { location.reload(); });
+      box.appendChild(document.createElement('br'));
+      box.appendChild(b);
+    }
+  }
+  function row(table, label, valueNode, valueCls) {
+    var tr = el('tr');
+    tr.appendChild(el('td', 'k', label));
+    var td = el('td', valueCls || '');
+    if (valueNode != null) {
+      if (typeof valueNode === 'string') td.textContent = valueNode; else td.appendChild(valueNode);
+    }
+    tr.appendChild(td);
+    table.appendChild(tr);
+  }
+  function section(title, cls) {
+    var s = el('section', cls || '');
+    if (title) s.appendChild(el('h2', '', title));
+    main.appendChild(s);
+    return s;
+  }
+  function str(v) { return v == null ? '' : String(v); }
+
+  function render(d) {
+    var msg = document.getElementById('msg');
+    if (msg) msg.parentNode.removeChild(msg);
+    if (d.cancelled) {
+      section('', 'cancel').appendChild(document.createTextNode('この便は取り消しになりました'));
+      main.appendChild(el('h1', '', (str(d.anken) + ' ' + str(d.site)).trim()));
+      var sc = section('届け日');
+      sc.appendChild(el('div', 'big', str(d.dateLabel)));
+      sc.appendChild(el('p', 'sub', 'もう手配していたら、a-tech の担当にご連絡ください。'));
+      return;
+    }
+    main.appendChild(el('h1', '', (str(d.anken) + ' ' + str(d.site)).trim()));
+
+    var s1 = section('届け日と届け先');
+    var t1 = el('table'); s1.appendChild(t1);
+    var dateBox = document.createDocumentFragment();
+    dateBox.appendChild(el('span', 'big', str(d.dateLabel)));
+    if (d.time) { dateBox.appendChild(document.createElement('br')); dateBox.appendChild(document.createTextNode(str(d.time))); }
+    row(t1, '届け日', dateBox);
+    var addr = str(d.addr);
+    var addrBox = document.createDocumentFragment();
+    addrBox.appendChild(document.createTextNode(addr));
+    if (addr) {
+      addrBox.appendChild(document.createTextNode('　'));
+      var map = el('a', '', '地図');
+      map.href = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(addr);
+      map.target = '_blank'; map.rel = 'noopener noreferrer';
+      addrBox.appendChild(map);
+    }
+    row(t1, '住所', addrBox);
+    if (d.enterTime) row(t1, '搬入時間', str(d.enterTime));
+    if (d.hoist) row(t1, '荷揚げ', str(d.hoist));
+    if (d.contact || d.phone) {
+      var who = document.createDocumentFragment();
+      who.appendChild(document.createTextNode(str(d.contact)));
+      var tel = str(d.phone).replace(/[^0-9+]/g, '');
+      if (tel) {
+        who.appendChild(document.createTextNode('　'));
+        var a = el('a', '', str(d.phone));
+        a.href = 'tel:' + tel;
+        who.appendChild(a);
+      }
+      row(t1, '現場の担当', who);
+    }
+
+    var s2 = section('品目');
+    var t2 = el('table'); s2.appendChild(t2);
+    var items = Array.isArray(d.items) ? d.items : [];
+    items.forEach(function (it) {
+      var tr = el('tr');
+      var name = el('td', '', str(it && it.name));
+      if (it && it.add) name.appendChild(el('span', 'tag', '追加'));
+      tr.appendChild(name);
+      var q = Number(it && it.qty) || 0;
+      tr.appendChild(el('td', 'q', q > 0 ? '×' + q : '数は要確認'));
+      t2.appendChild(tr);
+    });
+    if (!items.length) { var tr0 = el('tr'); tr0.appendChild(el('td', '', '（品目なし）')); tr0.appendChild(el('td')); t2.appendChild(tr0); }
+
+    var rules = Array.isArray(d.rules) ? d.rules : [];
+    var notes = Array.isArray(d.notes) ? d.notes : [];
+    if (rules.length || notes.length) {
+      var s3 = section('マンションの決まり・配送の注意');
+      var t3 = el('table'); s3.appendChild(t3);
+      rules.forEach(function (x) { if (Array.isArray(x)) row(t3, str(x[0]), str(x[1]), 'note'); });
+      notes.forEach(function (n) { row(t3, 'この便の注意', str(n), 'note'); });
+    }
+
+    var img = str(d.image);
+    if (/^data:image\/(png|jpeg);base64,[A-Za-z0-9+\/=]+$/.test(img)) {
+      var s4 = section('置き場（赤い印のところに置いてください）');
+      var im = el('img'); im.src = img; im.alt = '置き場の図';
+      s4.appendChild(im);
+    }
+    var ids = Array.isArray(d.orderIds) ? d.orderIds.map(str).join('・') : '';
+    if (ids) main.appendChild(el('p', 'sub', '注文番号 ' + ids));
+  }
+
+  function load(tries) {
+    var k = readKey();
+    if (!k) { showMessage('この案内は見つかりませんでした。a-tech にお問い合わせください。'); return; }
+    fetch(GAS_URL + '?action=haiso&k=' + k, { method: 'GET', mode: 'cors', credentials: 'omit', redirect: 'follow', cache: 'no-store' })
+      .then(function (r) { if (!r.ok) throw new Error('http ' + r.status); return r.json(); })
+      .then(function (d) {
+        if (d && d.ok && /^\d{4}-\d{2}-\d{2}$/.test(str(d.date))) { render(d); return; }
+        if (d && d.error === 'not_found') showMessage('この案内は見つかりませんでした。a-tech にお問い合わせください。');
+        else showMessage('読み込めませんでした。少しおいて開き直してください。', true);
+      })
+      .catch(function () {
+        if (tries > 0) { setTimeout(function () { load(tries - 1); }, 1500); return; }
+        showMessage('読み込めませんでした。電波のよいところで開き直してください。', true);
+      });
+  }
+  load(1);
+})();
+</script>
+</body>
+</html>
